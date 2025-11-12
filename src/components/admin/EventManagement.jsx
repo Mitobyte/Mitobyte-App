@@ -813,6 +813,67 @@ function EventModal({ event, user, onClose, onSuccess }) {
             </div>
           </div>
 
+          {/* Form Assignments */}
+          <div className="space-y-4 border border-border rounded-lg p-4 bg-muted/30">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">📋</span>
+              <h3 className="text-sm font-semibold">Event Forms</h3>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Assign check-in and feedback forms to this event
+            </p>
+
+            {/* Check-In Form Selection */}
+            <div>
+              <label htmlFor="checkInFormId" className="block text-sm font-medium mb-2">
+                Check-In Form (Optional)
+              </label>
+              <select
+                id="checkInFormId"
+                name="checkInFormId"
+                value={formData.checkInFormId || ''}
+                onChange={(e) => setFormData(prev => ({...prev, checkInFormId: e.target.value || null}))}
+                className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                disabled={loadingForms}
+              >
+                <option value="">None - No check-in form</option>
+                {checkInForms.map(form => (
+                  <option key={form.id} value={form.id}>
+                    {form.name} {form.is_system === 1 ? '(System)' : '(Custom)'}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Form attendees fill out when checking in to the event
+              </p>
+            </div>
+
+            {/* Feedback Form Selection */}
+            <div>
+              <label htmlFor="feedbackFormId" className="block text-sm font-medium mb-2">
+                Feedback Form (Optional)
+              </label>
+              <select
+                id="feedbackFormId"
+                name="feedbackFormId"
+                value={formData.feedbackFormId || ''}
+                onChange={(e) => setFormData(prev => ({...prev, feedbackFormId: e.target.value || null}))}
+                className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                disabled={loadingForms}
+              >
+                <option value="">None - No feedback form</option>
+                {feedbackForms.map(form => (
+                  <option key={form.id} value={form.id}>
+                    {form.name} {form.is_system === 1 ? '(System)' : '(Custom)'}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Form attendees fill out to provide feedback after the event
+              </p>
+            </div>
+          </div>
+
           {/* Thumbnail Upload */}
           <div className="space-y-2 sm:space-y-3 w-full">
             <label className="block text-sm font-medium">
@@ -892,67 +953,6 @@ function EventModal({ event, user, onClose, onSuccess }) {
                 </Button>
               </motion.div>
             )}
-          </div>
-
-          {/* Form Assignments */}
-          <div className="space-y-4 border border-border rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg">📋</span>
-              <h3 className="text-sm font-semibold">Event Forms</h3>
-            </div>
-            <p className="text-xs text-muted-foreground mb-4">
-              Assign check-in and feedback forms to this event
-            </p>
-
-            {/* Check-In Form Selection */}
-            <div>
-              <label htmlFor="checkInFormId" className="block text-sm font-medium mb-2">
-                Check-In Form (Optional)
-              </label>
-              <select
-                id="checkInFormId"
-                name="checkInFormId"
-                value={formData.checkInFormId || ''}
-                onChange={(e) => setFormData(prev => ({...prev, checkInFormId: e.target.value || null}))}
-                className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                disabled={loadingForms}
-              >
-                <option value="">None - No check-in form</option>
-                {checkInForms.map(form => (
-                  <option key={form.id} value={form.id}>
-                    {form.name} {form.is_system === 1 ? '(System)' : '(Custom)'}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Form attendees fill out when checking in to the event
-              </p>
-            </div>
-
-            {/* Feedback Form Selection */}
-            <div>
-              <label htmlFor="feedbackFormId" className="block text-sm font-medium mb-2">
-                Feedback Form (Optional)
-              </label>
-              <select
-                id="feedbackFormId"
-                name="feedbackFormId"
-                value={formData.feedbackFormId || ''}
-                onChange={(e) => setFormData(prev => ({...prev, feedbackFormId: e.target.value || null}))}
-                className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                disabled={loadingForms}
-              >
-                <option value="">None - No feedback form</option>
-                {feedbackForms.map(form => (
-                  <option key={form.id} value={form.id}>
-                    {form.name} {form.is_system === 1 ? '(System)' : '(Custom)'}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Form attendees fill out to provide feedback after the event
-              </p>
-            </div>
           </div>
 
           {/* Error Message */}
