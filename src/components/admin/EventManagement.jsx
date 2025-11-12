@@ -482,7 +482,9 @@ function EventModal({ event, user, onClose, onSuccess }) {
     isRecurring: event?.is_recurring || false,
     recurringPattern: event?.recurring_pattern || 'weekly',
     recurringEndDate: event?.recurring_end_date || '',
-    thumbnailUrl: event?.thumbnail_url || ''
+    thumbnailUrl: event?.thumbnail_url || '',
+    checkInFormId: event?.check_in_form_id || null,
+    feedbackFormId: event?.feedback_form_id || null
   })
   const [thumbnailFile, setThumbnailFile] = useState(null)
   const [thumbnailPreview, setThumbnailPreview] = useState(event?.thumbnail_url || null)
@@ -490,8 +492,34 @@ function EventModal({ event, user, onClose, onSuccess }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState(null)
   const [updateSeries, setUpdateSeries] = useState(false)
+  const [checkInForms, setCheckInForms] = useState([])
+  const [feedbackForms, setFeedbackForms] = useState([])
+  const [loadingForms, setLoadingForms] = useState(true)
 
   const isPartOfSeries = event && (event.parent_event_id || event.is_recurring)
+
+  // Fetch form templates on mount
+  useEffect(() => {
+    const fetchForms = async () => {
+      try {
+        setLoadingForms(true)
+        const response = await fetch('/api/form-templates-manager?includeCustom=true')
+        const data = await response.json()
+
+        if (data.success) {
+          const templates = data.templates || []
+          setCheckInForms(templates.filter(t => t.form_type === 'check-in'))
+          setFeedbackForms(templates.filter(t => t.form_type === 'feedback'))
+        }
+      } catch (error) {
+        console.error('Failed to fetch form templates:', error)
+      } finally {
+        setLoadingForms(false)
+      }
+    }
+
+    fetchForms()
+  }, [])
 
   const eventTypes = [
     { value: 'code_and_coffee', label: 'Code and Coffee', icon: '☕' },
@@ -590,7 +618,9 @@ function EventModal({ event, user, onClose, onSuccess }) {
         isRecurring: formData.isRecurring,
         recurringPattern: formData.isRecurring ? formData.recurringPattern : null,
         recurringEndDate: formData.isRecurring ? formData.recurringEndDate : null,
-        thumbnailUrl: thumbnailUrl || null
+        thumbnailUrl: thumbnailUrl || null,
+        checkInFormId: formData.checkInFormId || null,
+        feedbackFormId: formData.feedbackFormId || null
       }
 
       if (event) {
@@ -862,6 +892,67 @@ function EventModal({ event, user, onClose, onSuccess }) {
                 </Button>
               </motion.div>
             )}
+          </div>
+
+          {/* Form Assignments */}
+          <div className="space-y-4 border border-border rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">📋</span>
+              <h3 className="text-sm font-semibold">Event Forms</h3>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">
+              Assign check-in and feedback forms to this event
+            </p>
+
+            {/* Check-In Form Selection */}
+            <div>
+              <label htmlFor="checkInFormId" className="block text-sm font-medium mb-2">
+                Check-In Form (Optional)
+              </label>
+              <select
+                id="checkInFormId"
+                name="checkInFormId"
+                value={formData.checkInFormId || ''}
+                onChange={(e) => setFormData(prev => ({...prev, checkInFormId: e.target.value || null}))}
+                className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                disabled={loadingForms}
+              >
+                <option value="">None - No check-in form</option>
+                {checkInForms.map(form => (
+                  <option key={form.id} value={form.id}>
+                    {form.name} {form.is_system === 1 ? '(System)' : '(Custom)'}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Form attendees fill out when checking in to the event
+              </p>
+            </div>
+
+            {/* Feedback Form Selection */}
+            <div>
+              <label htmlFor="feedbackFormId" className="block text-sm font-medium mb-2">
+                Feedback Form (Optional)
+              </label>
+              <select
+                id="feedbackFormId"
+                name="feedbackFormId"
+                value={formData.feedbackFormId || ''}
+                onChange={(e) => setFormData(prev => ({...prev, feedbackFormId: e.target.value || null}))}
+                className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                disabled={loadingForms}
+              >
+                <option value="">None - No feedback form</option>
+                {feedbackForms.map(form => (
+                  <option key={form.id} value={form.id}>
+                    {form.name} {form.is_system === 1 ? '(System)' : '(Custom)'}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Form attendees fill out to provide feedback after the event
+              </p>
+            </div>
           </div>
 
           {/* Error Message */}
