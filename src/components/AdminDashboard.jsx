@@ -676,6 +676,7 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
                 <nav className="flex space-x-8 -mb-px">
                   {[
                     { id: 'my-events', label: 'All Events', icon: '📅' },
+                    { id: 'create', label: 'Create Event', icon: '➕' },
                     { id: 'ai-create', label: 'Create with AI', icon: '🤖' },
                     { id: 'forms', label: 'Form Templates', icon: '📋' }
                   ].map((tab) => (
@@ -780,7 +781,7 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
                               ? "No events created yet."
                               : "No events match your filters."}
                           </p>
-                          {allEvents.length === 0 && <Button onClick={() => setEventsSubTab('ai-create')}>Create Event with AI</Button>}
+                          {allEvents.length === 0 && <Button onClick={() => setEventsSubTab('create')}>Create Event</Button>}
                         </div>
                       ) : viewMode === 'table' ? (
                         <div className="overflow-x-auto">
@@ -1012,6 +1013,21 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
                     </CardContent>
                   </Card>
                 </>
+              )}
+
+              {/* Create Event Sub-tab */}
+              {eventsSubTab === 'create' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Create New Event</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Create any type of event for the community.
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <AddEvent user={user} isHost={false} />
+                  </CardContent>
+                </Card>
               )}
 
               {/* AI Create Event Sub-tab */}
