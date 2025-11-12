@@ -10,6 +10,8 @@ import { createEvent } from '../../services/eventApi'
  * Form for admins and hosts to create new community events
  */
 export default function AddEvent({ user, isHost = false }) {
+  console.log('AddEvent component rendering with user:', user, 'isHost:', isHost)
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
