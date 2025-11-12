@@ -18,6 +18,7 @@ import APIDocsViewer from './admin/APIDocsViewer'
 import MobileMenu from './MobileMenu'
 import AddEvent from './admin/AddEvent'
 import AIEventCreator from './admin/AIEventCreator'
+import EventCSVUpload from './admin/EventCSVUpload'
 import EventAnalytics from './EventAnalytics'
 import { getAllUsers, promoteUserToAdmin, demoteUserFromAdmin, promoteUserToHost, demoteUserFromHost, promoteUserToSponsor, demoteUserFromSponsor, deleteUser, suspendUser, unsuspendUser } from '../services/adminApi'
 import { updateEvent, deleteEvent as deleteEventApi } from '../services/eventApi'
@@ -677,6 +678,7 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
                   {[
                     { id: 'my-events', label: 'All Events', icon: '📅' },
                     { id: 'create', label: 'Create Event', icon: '➕' },
+                    { id: 'csv-import', label: 'Import CSV', icon: '📤' },
                     { id: 'ai-create', label: 'Create with AI', icon: '🤖' },
                     { id: 'forms', label: 'Form Templates', icon: '📋' }
                   ].map((tab) => (
@@ -1028,6 +1030,17 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
                     <AddEvent user={user} isHost={false} />
                   </CardContent>
                 </Card>
+              )}
+
+              {/* CSV Import Sub-tab */}
+              {eventsSubTab === 'csv-import' && (
+                <EventCSVUpload
+                  user={user}
+                  onSuccess={(data) => {
+                    fetchAllEvents()
+                    setEventsSubTab('my-events')
+                  }}
+                />
               )}
 
               {/* AI Create Event Sub-tab */}
