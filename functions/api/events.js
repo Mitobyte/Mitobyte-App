@@ -58,7 +58,8 @@ export async function onRequestPost(context) {
       recurringEndDate,
       thumbnailUrl,
       checkInFormId,
-      feedbackFormId
+      feedbackFormId,
+      externalUrl
     } = await context.request.json();
 
     // Validate required fields
@@ -96,8 +97,8 @@ export async function onRequestPost(context) {
       `INSERT INTO events (
         title, description, event_type, date, time, location, capacity, created_by,
         is_recurring, recurring_pattern, recurring_end_date, thumbnail_url,
-        check_in_form_id, feedback_form_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        check_in_form_id, feedback_form_id, external_url
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
       .bind(
         title,
@@ -113,7 +114,8 @@ export async function onRequestPost(context) {
         isRecurring ? recurringEndDate : null,
         thumbnailUrl || null,
         checkInFormId || null,
-        feedbackFormId || null
+        feedbackFormId || null,
+        externalUrl || null
       )
       .run();
 
@@ -143,8 +145,8 @@ export async function onRequestPost(context) {
           `INSERT INTO events (
             title, description, event_type, date, time, location, capacity, created_by,
             is_recurring, recurring_pattern, recurring_end_date, parent_event_id, thumbnail_url,
-            check_in_form_id, feedback_form_id
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            check_in_form_id, feedback_form_id, external_url
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
           .bind(
             title,
@@ -161,7 +163,8 @@ export async function onRequestPost(context) {
             parentEventId,
             thumbnailUrl || null,
             checkInFormId || null,
-            feedbackFormId || null
+            feedbackFormId || null,
+            externalUrl || null
           )
           .run();
 

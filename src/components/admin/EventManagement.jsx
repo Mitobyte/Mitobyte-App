@@ -381,10 +381,25 @@ export default function EventManagement({ user }) {
                               ✓ Feedback
                             </Badge>
                           )}
+                          {event.external_url && (
+                            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">
+                              🔗 External
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
                           {event.description}
                         </p>
+                        {event.external_url && (
+                          <a
+                            href={event.external_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                          >
+                            🔗 View on external platform
+                          </a>
+                        )}
                         <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                           <span>📅 {formatDate(event.date)}</span>
                           <span>🕒 {event.time}</span>
@@ -484,7 +499,8 @@ function EventModal({ event, user, onClose, onSuccess }) {
     recurringEndDate: event?.recurring_end_date || '',
     thumbnailUrl: event?.thumbnail_url || '',
     checkInFormId: event?.check_in_form_id || null,
-    feedbackFormId: event?.feedback_form_id || null
+    feedbackFormId: event?.feedback_form_id || null,
+    externalUrl: event?.external_url || ''
   })
   const [thumbnailFile, setThumbnailFile] = useState(null)
   const [thumbnailPreview, setThumbnailPreview] = useState(event?.thumbnail_url || null)
@@ -620,7 +636,8 @@ function EventModal({ event, user, onClose, onSuccess }) {
         recurringEndDate: formData.isRecurring ? formData.recurringEndDate : null,
         thumbnailUrl: thumbnailUrl || null,
         checkInFormId: formData.checkInFormId || null,
-        feedbackFormId: formData.feedbackFormId || null
+        feedbackFormId: formData.feedbackFormId || null,
+        externalUrl: formData.externalUrl || null
       }
 
       if (event) {
@@ -810,6 +827,35 @@ function EventModal({ event, user, onClose, onSuccess }) {
                 placeholder="50"
                 min="1"
               />
+            </div>
+          </div>
+
+          {/* External Event Link */}
+          <div className="space-y-3 border border-border rounded-lg p-4 bg-blue-50/50 dark:bg-blue-950/20">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">🔗</span>
+              <h3 className="text-sm font-semibold">External Event Link (Optional)</h3>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              If this event is hosted on another platform (Eventbrite, Meetup, etc.), add the link here.
+              Attendees will be directed to the external platform for registration while still accessing Mitobyte features like check-in and feedback.
+            </p>
+            <div>
+              <label htmlFor="externalUrl" className="block text-sm font-medium mb-2">
+                External Event URL
+              </label>
+              <Input
+                id="externalUrl"
+                name="externalUrl"
+                type="url"
+                value={formData.externalUrl}
+                onChange={handleChange}
+                placeholder="https://eventbrite.com/event/..."
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Leave blank if hosting directly on Mitobyte
+              </p>
             </div>
           </div>
 

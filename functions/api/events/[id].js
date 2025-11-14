@@ -55,6 +55,7 @@ export async function onRequestPut(context) {
       recurringEndDate,
       checkInFormId,
       feedbackFormId,
+      externalUrl,
       updateSeries // New parameter: true = update all events in series
     } = await context.request.json();
 
