@@ -84,11 +84,19 @@ export default function InviteRedemption({ inviteCode, isAuthenticated, user, wa
         alert('🎉 Redemption successful! Redirecting...');
         setRedeemed(true);
 
-        // Redirect to main app after 3 seconds
+        // Mark invite as redeemed in localStorage to skip invite step in onboarding
+        try {
+          localStorage.setItem('inviteRedeemed', 'true');
+          localStorage.setItem('redeemedInviteCode', inviteCode);
+        } catch (e) {
+          console.error('Failed to set localStorage:', e);
+        }
+
+        // Redirect to main app after 2 seconds
         setTimeout(() => {
           window.history.pushState({}, '', '/');
           window.location.reload();
-        }, 3000);
+        }, 2000);
       } else {
         alert(`❌ Redemption failed: ${data.error}`);
         setError(data.error || 'Failed to redeem invite');
