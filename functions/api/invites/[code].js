@@ -160,10 +160,13 @@ export async function onRequestPost(context) {
       .bind(invite.id, identifier || 'anonymous')
       .run();
 
-    // Update usage counters
+    // Update usage counters (handle NULL for unlimited invites)
     await context.env.DB.prepare(
       `UPDATE invite_codes
-       SET uses_remaining = uses_remaining - 1,
+       SET uses_remaining = CASE
+                              WHEN uses_remaining IS NULL THEN NULL
+                              ELSE uses_remaining - 1
+                            END,
            total_uses = total_uses + 1
        WHERE id = ?`
     )
