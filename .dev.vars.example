@@ -1,0 +1,6 @@
+# Local development secrets for Cloudflare Pages Functions
+# Copy this file to .dev.vars and add your actual values
+# .dev.vars is gitignored and won't be committed
+
+# Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+WALLET_ENCRYPTION_KEY=your-64-character-hex-encryption-key-here
