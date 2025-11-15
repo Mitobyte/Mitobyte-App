@@ -61,12 +61,20 @@ export async function onRequestPost(context) {
     }
 
     // Check if user already redeemed this code
-    const identifier = userWallet || userEmail || 'anonymous';
+    // Normalize identifier - prefer wallet, then email without prefix
+    let identifier = userWallet || userEmail || 'anonymous';
+
+    // Remove "email:" prefix if present to ensure consistency
+    if (identifier.startsWith('email:')) {
+      identifier = identifier.substring(6);
+    }
+
     if (identifier !== 'anonymous') {
+      // Check with both formats to handle legacy data
       const { results: redemptions } = await context.env.DB.prepare(
-        'SELECT id FROM invite_code_uses WHERE invite_code_id = ? AND wallet_address = ?'
+        'SELECT id FROM invite_code_uses WHERE invite_code_id = ? AND (wallet_address = ? OR wallet_address = ?)'
       )
-        .bind(invite.id, identifier)
+        .bind(invite.id, identifier, `email:${identifier}`)
         .all();
 
       if (redemptions.length > 0) {
