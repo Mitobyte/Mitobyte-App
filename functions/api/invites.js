@@ -88,11 +88,12 @@ export async function onRequestPost(context) {
     }
 
     // Insert invite code
+    const usesLimit = maxUses || null;
     await context.env.DB.prepare(
-      `INSERT INTO invite_codes (code, created_by, expires_at, max_uses, description)
-       VALUES (?, ?, ?, ?, ?)`
+      `INSERT INTO invite_codes (code, created_by, expires_at, max_uses, uses_remaining, notes)
+       VALUES (?, ?, ?, ?, ?, ?)`
     )
-      .bind(code, adminEmail, expiresAt, maxUses || null, description || null)
+      .bind(code, adminEmail, expiresAt, usesLimit, usesLimit, description || null)
       .run();
 
     return jsonResponse({
