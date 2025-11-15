@@ -12,19 +12,12 @@ export default function InviteRedemption({ inviteCode, isAuthenticated, user, wa
   const [invite, setInvite] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [redeeming, setRedeeming] = useState(false);
-  const [redeemed, setRedeemed] = useState(false);
 
   useEffect(() => {
     validateInvite();
   }, [inviteCode]);
 
-  useEffect(() => {
-    if (isAuthenticated && invite && !redeemed) {
-      // Auto-redeem if user is logged in
-      redeemInvite();
-    }
-  }, [isAuthenticated, invite]);
+  // Removed auto-redemption - now happens during onboarding completion
 
   const validateInvite = async () => {
     try {
@@ -50,65 +43,7 @@ export default function InviteRedemption({ inviteCode, isAuthenticated, user, wa
     }
   };
 
-  const redeemInvite = async () => {
-    try {
-      setRedeeming(true);
-
-      const userEmail = user?.email || null;
-      const userWallet = wallet?.address || null;
-
-      alert(`🎟️ Redeeming invite code: ${inviteCode}\nEmail: ${userEmail}\nWallet: ${userWallet}`);
-
-      const response = await fetch(`/api/invites/${inviteCode}/redeem?t=${Date.now()}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userEmail,
-          userWallet
-        })
-      });
-
-      alert(`📡 Redemption response status: ${response.status}\nURL: /api/invites/${inviteCode}/redeem`);
-
-      let data;
-      try {
-        data = await response.json();
-        alert(`📥 Redemption response: ${JSON.stringify(data, null, 2)}`);
-      } catch (parseError) {
-        const text = await response.text();
-        alert(`🚨 Failed to parse JSON response!\nStatus: ${response.status}\nRaw response: ${text}`);
-        throw new Error('Invalid JSON response from server');
-      }
-
-      if (data.success) {
-        alert('🎉 Redemption successful! Redirecting...');
-        setRedeemed(true);
-
-        // Mark invite as redeemed in localStorage to skip invite step in onboarding
-        try {
-          localStorage.setItem('inviteRedeemed', 'true');
-          localStorage.setItem('redeemedInviteCode', inviteCode);
-        } catch (e) {
-          console.error('Failed to set localStorage:', e);
-        }
-
-        // Redirect to main app after 2 seconds
-        setTimeout(() => {
-          window.history.pushState({}, '', '/');
-          window.location.reload();
-        }, 2000);
-      } else {
-        alert(`❌ Redemption failed: ${data.error}`);
-        setError(data.error || 'Failed to redeem invite');
-      }
-    } catch (err) {
-      console.error('Redeem invite error:', err);
-      alert(`🚨 Redemption error: ${err.message}`);
-      setError('Failed to redeem invite code');
-    } finally {
-      setRedeeming(false);
-    }
-  };
+  // Redemption now happens during onboarding completion - no manual redemption needed
 
   if (loading) {
     return (
@@ -139,32 +74,6 @@ export default function InviteRedemption({ inviteCode, isAuthenticated, user, wa
               <Button onClick={() => window.location.href = '/'}>
                 Go to Home
               </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (redeemed) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-green-500/5">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full"
-        >
-          <Card>
-            <CardContent className="p-8 text-center">
-              <div className="text-6xl mb-6">🎉</div>
-              <h2 className="text-2xl font-bold mb-3">Welcome to Mitobyte!</h2>
-              <p className="text-muted-foreground mb-2">
-                {invite.description || 'Your invite code has been redeemed successfully!'}
-              </p>
-              <p className="text-sm text-muted-foreground mb-6">
-                Redirecting you to the platform...
-              </p>
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             </CardContent>
           </Card>
         </motion.div>
@@ -242,40 +151,19 @@ export default function InviteRedemption({ inviteCode, isAuthenticated, user, wa
             </div>
 
             {/* Action */}
-            {isAuthenticated ? (
+            <div className="space-y-3">
               <Button
-                onClick={redeemInvite}
-                disabled={redeeming}
+                onClick={onLogin}
                 className="w-full"
                 size="lg"
               >
-                {redeeming ? (
-                  <>
-                    <span className="animate-spin mr-2">⏳</span>
-                    Joining...
-                  </>
-                ) : (
-                  <>
-                    <span className="mr-2">🎉</span>
-                    Join Mitobyte
-                  </>
-                )}
+                <span className="mr-2">🔐</span>
+                Sign In to Continue
               </Button>
-            ) : (
-              <div className="space-y-3">
-                <Button
-                  onClick={onLogin}
-                  className="w-full"
-                  size="lg"
-                >
-                  <span className="mr-2">🔐</span>
-                  Sign In to Join
-                </Button>
-                <p className="text-xs text-center text-muted-foreground">
-                  You'll be automatically added after signing in
-                </p>
-              </div>
-            )}
+              <p className="text-xs text-center text-muted-foreground">
+                Your invite code will be used during onboarding
+              </p>
+            </div>
           </CardContent>
         </Card>
       </motion.div>

@@ -31,30 +31,32 @@ export function OnboardingFlow({ user, walletAddress, onComplete }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Check if invite-only mode is enabled and if invite was already redeemed
+  // Check if invite-only mode is enabled and load pending invite code from QR scan
   useEffect(() => {
     const checkInviteOnly = async () => {
       try {
-        // Check if invite was already redeemed via QR code
-        const inviteRedeemed = localStorage.getItem('inviteRedeemed') === 'true';
-        const redeemedCode = localStorage.getItem('redeemedInviteCode');
+        // Check if there's a pending invite code from QR scan
+        const pendingCode = localStorage.getItem('pendingInviteCode');
 
-        if (inviteRedeemed && redeemedCode) {
-          console.log('✅ Invite already redeemed via QR code:', redeemedCode);
-          setInviteCodeValidated(true);
-          setInviteCode(redeemedCode);
-          // Clear the flags after reading
-          localStorage.removeItem('inviteRedeemed');
-          localStorage.removeItem('redeemedInviteCode');
-          // Don't show invite step - skip directly to welcome
-          setInviteOnly(false);
-          return;
+        if (pendingCode) {
+          console.log('✅ Found pending invite code from QR scan:', pendingCode);
+          setInviteCode(pendingCode);
+          setInviteCodeValidated(true); // Pre-validate since it came from QR
+          // Don't clear it yet - clear after onboarding is complete
         }
 
         const response = await fetch('/api/platform-settings?key=invite_only');
         const data = await response.json();
         if (data.success && data.setting) {
-          setInviteOnly(data.setting.setting_value === 'true');
+          const isInviteOnly = data.setting.setting_value === 'true';
+
+          // If we have a pending invite code, always show the invite step
+          // even if invite-only is disabled (to redeem the code)
+          if (pendingCode) {
+            setInviteOnly(true);
+          } else {
+            setInviteOnly(isInviteOnly);
+          }
         }
       } catch (err) {
         console.error('Failed to check invite-only status:', err);
@@ -329,6 +331,38 @@ export function OnboardingFlow({ user, walletAddress, onComplete }) {
 
       await updateProfile(walletAddress, dataToSave, true);
       console.log('✅ Profile saved to database');
+
+      // Redeem invite code if present
+      const pendingCode = localStorage.getItem('pendingInviteCode');
+      if (pendingCode && inviteCodeValidated) {
+        try {
+          console.log('🎟️ Redeeming invite code:', pendingCode);
+          const userEmail = user?.email || null;
+          const userWallet = walletAddress;
+
+          const response = await fetch(`/api/invites/${pendingCode}/redeem`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userEmail,
+              userWallet
+            })
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            console.log('✅ Invite code redeemed successfully');
+          } else {
+            console.warn('⚠️ Invite redemption failed:', data.error);
+          }
+        } catch (err) {
+          console.error('❌ Failed to redeem invite code:', err);
+          // Don't fail onboarding if redemption fails
+        } finally {
+          // Clear the pending invite code regardless of success/failure
+          localStorage.removeItem('pendingInviteCode');
+        }
+      }
 
       // Call onComplete callback
       if (onComplete) {
