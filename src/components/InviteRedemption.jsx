@@ -59,7 +59,7 @@ export default function InviteRedemption({ inviteCode, isAuthenticated, user, wa
 
       alert(`🎟️ Redeeming invite code: ${inviteCode}\nEmail: ${userEmail}\nWallet: ${userWallet}`);
 
-      const response = await fetch(`/api/invites/${inviteCode}/redeem`, {
+      const response = await fetch(`/api/invites/${inviteCode}/redeem?t=${Date.now()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -68,9 +68,17 @@ export default function InviteRedemption({ inviteCode, isAuthenticated, user, wa
         })
       });
 
-      alert(`📡 Redemption response status: ${response.status}`);
-      const data = await response.json();
-      alert(`📥 Redemption response: ${JSON.stringify(data, null, 2)}`);
+      alert(`📡 Redemption response status: ${response.status}\nURL: /api/invites/${inviteCode}/redeem`);
+
+      let data;
+      try {
+        data = await response.json();
+        alert(`📥 Redemption response: ${JSON.stringify(data, null, 2)}`);
+      } catch (parseError) {
+        const text = await response.text();
+        alert(`🚨 Failed to parse JSON response!\nStatus: ${response.status}\nRaw response: ${text}`);
+        throw new Error('Invalid JSON response from server');
+      }
 
       if (data.success) {
         alert('🎉 Redemption successful! Redirecting...');
