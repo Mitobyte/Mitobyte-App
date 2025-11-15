@@ -1,46 +1,72 @@
 /**
- * JWT Authentication Utility for Cloudflare Workers
- * Uses @tsndr/cloudflare-worker-jwt for better compatibility
+ * JWT Authentication Utility
+ * Handles JWT token generation and validation using jose library
  */
 
-import jwt from '@tsndr/cloudflare-worker-jwt';
+import * as jose from 'jose';
 
 /**
  * Token configuration
  */
-const TOKEN_EXPIRY_SECONDS = 86400; // 24 hours
-const REFRESH_TOKEN_EXPIRY_SECONDS = 2592000; // 30 days
+const TOKEN_EXPIRY = '24h'; // Access token expires in 24 hours
+const REFRESH_TOKEN_EXPIRY = '30d'; // Refresh token expires in 30 days
 const TOKEN_ISSUER = 'mitobyte-voting';
 const TOKEN_AUDIENCE = 'mitobyte-app';
 
 /**
+ * Get JWT secret as Uint8Array
+ * @param {string} secret - Base64 or hex encoded secret from environment
+ * @returns {Uint8Array}
+ */
+function getSecretKey(secret) {
+  if (!secret) {
+    throw new Error('JWT_SECRET not configured in environment');
+  }
+
+  // Convert hex string to Uint8Array
+  // Expected format: 64-character hex string (32 bytes)
+  if (secret.length === 64) {
+    const bytes = new Uint8Array(32);
+    for (let i = 0; i < 32; i++) {
+      bytes[i] = parseInt(secret.substr(i * 2, 2), 16);
+    }
+    return bytes;
+  }
+
+  // Fallback: use TextEncoder for string secrets (less secure)
+  const encoder = new TextEncoder();
+  return encoder.encode(secret);
+}
+
+/**
  * Generate a JWT access token for a user
  * @param {Object} payload - User data to encode in token
+ * @param {string} payload.userId - User ID
+ * @param {string} payload.email - User email
+ * @param {string} payload.walletHash - User wallet hash (for verification)
+ * @param {boolean} payload.isAdmin - Admin status
+ * @param {boolean} payload.isHost - Host status
+ * @param {boolean} payload.isSponsor - Sponsor status
  * @param {string} jwtSecret - JWT secret key
  * @returns {Promise<string>} JWT token
  */
 export async function generateAccessToken(payload, jwtSecret) {
-  if (!jwtSecret) {
-    throw new Error('JWT_SECRET not configured');
-  }
+  const secretKey = getSecretKey(jwtSecret);
 
-  const now = Math.floor(Date.now() / 1000);
-
-  const token = await jwt.sign(
-    {
-      userId: payload.userId,
-      email: payload.email,
-      walletHash: payload.walletHash,
-      isAdmin: payload.isAdmin || false,
-      isHost: payload.isHost || false,
-      isSponsor: payload.isSponsor || false,
-      iss: TOKEN_ISSUER,
-      aud: TOKEN_AUDIENCE,
-      iat: now,
-      exp: now + TOKEN_EXPIRY_SECONDS,
-    },
-    jwtSecret
-  );
+  const token = await new jose.SignJWT({
+    userId: payload.userId,
+    email: payload.email,
+    walletHash: payload.walletHash,
+    isAdmin: payload.isAdmin || false,
+    isHost: payload.isHost || false,
+    isSponsor: payload.isSponsor || false,
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setIssuer(TOKEN_ISSUER)
+    .setAudience(TOKEN_AUDIENCE)
+    .setExpirationTime(TOKEN_EXPIRY)
+    .sign(secretKey);
 
   return token;
 }
@@ -48,28 +74,25 @@ export async function generateAccessToken(payload, jwtSecret) {
 /**
  * Generate a refresh token for long-term authentication
  * @param {Object} payload - Minimal user data
+ * @param {string} payload.userId - User ID
+ * @param {string} payload.email - User email
  * @param {string} jwtSecret - JWT secret key
  * @returns {Promise<string>} Refresh token
  */
 export async function generateRefreshToken(payload, jwtSecret) {
-  if (!jwtSecret) {
-    throw new Error('JWT_SECRET not configured');
-  }
+  const secretKey = getSecretKey(jwtSecret);
 
-  const now = Math.floor(Date.now() / 1000);
-
-  const token = await jwt.sign(
-    {
-      userId: payload.userId,
-      email: payload.email,
-      type: 'refresh',
-      iss: TOKEN_ISSUER,
-      aud: TOKEN_AUDIENCE,
-      iat: now,
-      exp: now + REFRESH_TOKEN_EXPIRY_SECONDS,
-    },
-    jwtSecret
-  );
+  const token = await new jose.SignJWT({
+    userId: payload.userId,
+    email: payload.email,
+    type: 'refresh',
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setIssuer(TOKEN_ISSUER)
+    .setAudience(TOKEN_AUDIENCE)
+    .setExpirationTime(REFRESH_TOKEN_EXPIRY)
+    .sign(secretKey);
 
   return token;
 }
@@ -82,51 +105,28 @@ export async function generateRefreshToken(payload, jwtSecret) {
  * @throws {Error} If token is invalid or expired
  */
 export async function verifyToken(token, jwtSecret) {
-  if (!jwtSecret) {
-    throw new Error('JWT_SECRET not configured');
-  }
-
-  if (!token) {
-    throw new Error('Token is required');
-  }
+  const secretKey = getSecretKey(jwtSecret);
 
   try {
-    // Verify token signature and expiration
-    const isValid = await jwt.verify(token, jwtSecret);
-
-    if (!isValid) {
-      throw new Error('Invalid token signature');
-    }
-
-    // Decode the token
-    const { payload } = jwt.decode(token);
-
-    // Verify issuer and audience
-    if (payload.iss !== TOKEN_ISSUER) {
-      throw new Error('Invalid token issuer');
-    }
-
-    if (payload.aud !== TOKEN_AUDIENCE) {
-      throw new Error('Invalid token audience');
-    }
-
-    // Check expiration manually
-    const now = Math.floor(Date.now() / 1000);
-    if (payload.exp && payload.exp < now) {
-      throw new Error('Token has expired');
-    }
+    const { payload } = await jose.jwtVerify(token, secretKey, {
+      issuer: TOKEN_ISSUER,
+      audience: TOKEN_AUDIENCE,
+    });
 
     return payload;
   } catch (error) {
     // Provide specific error messages
-    if (error.message.includes('expired')) {
+    if (error.code === 'ERR_JWT_EXPIRED') {
       throw new Error('Token has expired');
     }
-    if (error.message.includes('signature')) {
+    if (error.code === 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED') {
       throw new Error('Invalid token signature');
     }
+    if (error.code === 'ERR_JWT_CLAIM_VALIDATION_FAILED') {
+      throw new Error('Token claim validation failed');
+    }
 
-    throw new Error(error.message || 'Invalid token');
+    throw new Error('Invalid token');
   }
 }
 
@@ -196,7 +196,7 @@ export async function generateTokenPair(userData, jwtSecret) {
   return {
     accessToken,
     refreshToken,
-    expiresIn: TOKEN_EXPIRY_SECONDS,
+    expiresIn: 86400, // 24 hours in seconds
     tokenType: 'Bearer',
   };
 }
