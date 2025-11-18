@@ -12,7 +12,9 @@ import FormTemplateManager from './admin/FormTemplateManager'
 import BugReports from './admin/BugReports'
 import Announcements from './admin/Announcements'
 import InviteSystem from './admin/InviteSystem'
+import InviteQRManager from './admin/InviteQRManager'
 import EventRequests from './admin/EventRequests'
+import SponsorManager from './admin/SponsorManager'
 import APIKeysManager from './admin/APIKeysManager'
 import APIDocsViewer from './admin/APIDocsViewer'
 import MobileMenu from './MobileMenu'
@@ -69,8 +71,8 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
       setLoading(true)
       setError(null)
 
-      console.log('🔍 Fetching users with email:', user.email)
-      const data = await getAllUsers(user.email)
+      console.log('🔍 Fetching users')
+      const data = await getAllUsers()
       console.log('✅ Users fetched successfully:', data)
       console.log('✅ Users array:', data.users)
       console.log('✅ Users count:', data.users?.length)
@@ -258,7 +260,7 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
     if (!confirmed) return
 
     try {
-      await promoteUserToAdmin(user.email, userId)
+      await promoteUserToAdmin(userId)
       // Refresh users list
       await fetchUsers()
       alert('User promoted to admin successfully!')
@@ -278,7 +280,7 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
     if (!confirmed) return
 
     try {
-      await demoteUserFromAdmin(user.email, userId)
+      await demoteUserFromAdmin(userId)
       // Refresh users list
       await fetchUsers()
       alert('User demoted from admin successfully!')
@@ -290,7 +292,7 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
 
   const handleDeleteUser = async (userId) => {
     try {
-      await deleteUser(user.email, userId)
+      await deleteUser(userId)
       // Remove user from local state instead of refetching
       setUsers(prev => prev.filter(u => u.id !== userId))
       alert('User deleted successfully!')
@@ -310,7 +312,7 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
     if (!confirmed) return
 
     try {
-      await suspendUser(user.email, userId)
+      await suspendUser(userId)
       // Refresh users list to show updated status
       await fetchUsers()
       alert('User suspended successfully!')
@@ -330,7 +332,7 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
     if (!confirmed) return
 
     try {
-      await unsuspendUser(user.email, userId)
+      await unsuspendUser(userId)
       // Refresh users list to show updated status
       await fetchUsers()
       alert('User restored successfully!')
@@ -350,7 +352,7 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
     if (!confirmed) return
 
     try {
-      await promoteUserToHost(user.email, userId)
+      await promoteUserToHost(userId)
       await fetchUsers()
       alert('User promoted to host successfully!')
     } catch (err) {
@@ -369,7 +371,7 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
     if (!confirmed) return
 
     try {
-      await demoteUserFromHost(user.email, userId)
+      await demoteUserFromHost(userId)
       await fetchUsers()
       alert('User demoted from host successfully!')
     } catch (err) {
@@ -388,7 +390,7 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
     if (!confirmed) return
 
     try {
-      await promoteUserToSponsor(user.email, userId)
+      await promoteUserToSponsor(userId)
       await fetchUsers()
       alert('User promoted to sponsor successfully!')
     } catch (err) {
@@ -407,7 +409,7 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
     if (!confirmed) return
 
     try {
-      await demoteUserFromSponsor(user.email, userId)
+      await demoteUserFromSponsor(userId)
       await fetchUsers()
       alert('User demoted from sponsor successfully!')
     } catch (err) {
@@ -588,6 +590,7 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
                 { id: 'checkIns', label: 'Check-Ins', icon: '✓', shortLabel: 'Check-Ins' },
                 { id: 'announcements', label: 'Announcements', icon: '📢', shortLabel: 'Announce' },
                 { id: 'invites', label: 'Invite System', icon: '🔒', shortLabel: 'Invites' },
+                { id: 'sponsors', label: 'Sponsor Banners', icon: '⭐', shortLabel: 'Sponsors' },
                 { id: 'apiKeys', label: 'API Keys', icon: '🔑', shortLabel: 'API Keys' },
                 { id: 'apiDocs', label: 'API Documentation', icon: '📚', shortLabel: 'API Docs' },
                 { id: 'bugs', label: 'Bug Reports', icon: '🐛', shortLabel: 'Bugs' }
@@ -1096,7 +1099,51 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
           )}
 
           {activeTab === 'invites' && (
-            <InviteSystem adminEmail={user.email} />
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span>🎟️</span>
+                    Invite QR Codes
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Generate QR codes to grant instant platform access to new users
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <InviteQRManager user={user} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span>🔒</span>
+                    Legacy Invite System
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <InviteSystem adminEmail={user.email} />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeTab === 'sponsors' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span>⭐</span>
+                  Sponsor Banner Management
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Manage sponsor logos that appear in the scrolling banner at the top of the platform
+                </p>
+              </CardHeader>
+              <CardContent>
+                <SponsorManager user={user} />
+              </CardContent>
+            </Card>
           )}
 
           {activeTab === 'apiKeys' && (
