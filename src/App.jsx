@@ -24,6 +24,7 @@ import { OnboardingFlow } from './components/OnboardingFlow'
 import SponsorBanner from './components/SponsorBanner'
 import { getOrCreateUser } from './services/userApi'
 import { isProfileComplete } from './services/profileApi'
+import { login as jwtLogin, logout as jwtLogout } from './services/authService'
 import mitobyteLogoLarge from './mitobyte-c-large.png'
 
 function App() {
@@ -229,6 +230,20 @@ function App() {
 
           setDbUser(userData)
           addDebugLog('🟢 USER REGISTERED SUCCESSFULLY', userData)
+
+          // Generate and store JWT tokens for API authentication
+          try {
+            const authData = await jwtLogin({ walletAddress })
+            addDebugLog('🟢 JWT TOKENS GENERATED', {
+              hasAccessToken: !!authData.accessToken,
+              hasRefreshToken: !!authData.refreshToken
+            })
+          } catch (jwtError) {
+            addDebugLog('🟡 JWT TOKEN GENERATION FAILED (non-critical)', {
+              error: jwtError.message
+            })
+            console.warn('JWT token generation failed, but user can still proceed:', jwtError)
+          }
         } catch (error) {
           addDebugLog('🔴 USER REGISTRATION FAILED', {
             error: error.message,
@@ -251,7 +266,8 @@ function App() {
     if (status === 'not-authenticated') {
       setProfileComplete(null)
       setShowOnboarding(false)
-      addDebugLog('🔵 CLEARED STATE ON LOGOUT')
+      jwtLogout() // Clear JWT tokens from localStorage
+      addDebugLog('🔵 CLEARED STATE ON LOGOUT (including JWT tokens)')
     }
   }, [status])
 
