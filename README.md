@@ -45,3 +45,6 @@ Find and register for our next event on:
 
 We look forward to building this community with you!
 
+---
+
+Powered by [Craft The Future](https://us.craftthefuture.xyz)
