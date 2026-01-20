@@ -25,7 +25,8 @@ export default function AddEvent({ user, isHost = false }) {
     recurringEndDate: '',
     thumbnailUrl: '',
     checkInFormId: '',
-    feedbackFormId: ''
+    feedbackFormId: '',
+    externalUrl: ''
   })
   const [thumbnailPreview, setThumbnailPreview] = useState(null)
   const [thumbnailFile, setThumbnailFile] = useState(null)
@@ -36,6 +37,10 @@ export default function AddEvent({ user, isHost = false }) {
   const [loadingTemplates, setLoadingTemplates] = useState(true)
   const [showQRModal, setShowQRModal] = useState(false)
   const [createdEvent, setCreatedEvent] = useState(null)
+  const [importMode, setImportMode] = useState(false)
+  const [importUrl, setImportUrl] = useState('')
+  const [isImporting, setIsImporting] = useState(false)
+  const [importStatus, setImportStatus] = useState(null)
 
   // Fetch form templates on mount
   useEffect(() => {
@@ -112,12 +117,95 @@ export default function AddEvent({ user, isHost = false }) {
     setFormData(prev => ({ ...prev, thumbnailUrl: '' }))
   }
 
+  const handleImportFromUrl = async () => {
+    if (!importUrl.trim()) {
+      setImportStatus({ type: 'error', message: 'Please enter a valid URL' })
+      return
+    }
+
+    setIsImporting(true)
+    setImportStatus(null)
+
+    try {
+      const response = await fetch('/api/scrape-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: importUrl })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || result.hint || 'Failed to import event')
+      }
+
+      const { data } = result
+
+      // Auto-populate form with scraped data
+      setFormData(prev => ({
+        ...prev,
+        title: data.title || prev.title,
+        description: data.description || prev.description,
+        date: data.date || prev.date,
+        time: data.time || prev.time,
+        location: data.location || prev.location,
+        eventType: data.eventType || prev.eventType,
+        thumbnailUrl: data.thumbnailUrl || prev.thumbnailUrl,
+        externalUrl: data.externalUrl || importUrl // Always set the external URL
+      }))
+
+      setImportStatus({
+        type: 'success',
+        message: `Successfully imported event from ${data.platform || 'external source'}! Review and edit the details below.`
+      })
+
+      // Switch to manual mode so user can review/edit
+      setImportMode(false)
+      setImportUrl('')
+
+    } catch (error) {
+      console.error('Import error:', error)
+      setImportStatus({
+        type: 'error',
+        message: error.message || 'Failed to import event from URL'
+      })
+    } finally {
+      setIsImporting(false)
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
     setSubmitStatus(null)
 
     try {
+      // Ensure native browser validation runs (especially in modals)
+      const formEl = e.currentTarget
+      if (formEl && formEl.checkValidity && !formEl.checkValidity()) {
+        formEl.reportValidity && formEl.reportValidity()
+        setIsSubmitting(false)
+        return
+      }
+
+      // Additional trimmed validation for text inputs
+      const title = (formData.title || '').trim()
+      const description = (formData.description || '').trim()
+      const locationVal = (formData.location || '').trim()
+      const dateVal = formData.date || ''
+      const timeVal = formData.time || ''
+      const missing = []
+      if (!title) missing.push('Event Title')
+      if (!description) missing.push('Description')
+      if (!dateVal) missing.push('Date')
+      if (!timeVal) missing.push('Time')
+      if (!locationVal) missing.push('Location')
+      if (missing.length) {
+        setSubmitStatus({ type: 'error', message: `Please fill in required fields: ${missing.join(', ')}` })
+        setIsSubmitting(false)
+        return
+      }
+
       let thumbnailUrl = formData.thumbnailUrl
 
       // Upload thumbnail if file is selected
@@ -147,18 +235,19 @@ export default function AddEvent({ user, isHost = false }) {
 
       // Create event via API
       const eventData = {
-        title: formData.title,
-        description: formData.description,
+        title,
+        description,
         eventType: formData.eventType,
-        date: formData.date,
-        time: formData.time,
-        location: formData.location,
+        date: dateVal,
+        time: timeVal,
+        location: locationVal,
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         createdBy: user?.email || null,
         isRecurring: formData.isRecurring,
         recurringPattern: formData.isRecurring ? formData.recurringPattern : null,
         recurringEndDate: formData.isRecurring ? formData.recurringEndDate : null,
         thumbnailUrl: thumbnailUrl || null,
+        externalUrl: formData.externalUrl || null,
         checkInFormId: formData.checkInFormId ? parseInt(formData.checkInFormId) : null,
         feedbackFormId: formData.feedbackFormId ? parseInt(formData.feedbackFormId) : null
       }
@@ -214,6 +303,125 @@ export default function AddEvent({ user, isHost = false }) {
       >
         <div className="w-full space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4 w-full">
+            {/* Import Mode Toggle */}
+            <div className="border border-border rounded-lg p-4 bg-gradient-to-r from-purple-50/50 to-blue-50/50 dark:from-purple-950/20 dark:to-blue-950/20">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <span className="text-lg">🔗</span>
+                    Import from External Platform
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Automatically extract event details from Eventbrite, Meetup, Facebook Events, etc.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant={importMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setImportMode(!importMode)
+                    setImportStatus(null)
+                  }}
+                >
+                  {importMode ? '📝 Manual Entry' : '🔗 Import from URL'}
+                </Button>
+              </div>
+
+              {importMode && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-3"
+                >
+                  <div className="flex gap-2">
+                    <Input
+                      type="url"
+                      value={importUrl}
+                      onChange={(e) => setImportUrl(e.target.value)}
+                      placeholder="https://eventbrite.com/event/..."
+                      className="flex-1"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleImportFromUrl()
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleImportFromUrl}
+                      disabled={isImporting || !importUrl.trim()}
+                    >
+                      {isImporting ? (
+                        <>
+                          <span className="animate-spin mr-2">⏳</span>
+                          Importing...
+                        </>
+                      ) : (
+                        <>
+                          <span className="mr-2">📥</span>
+                          Import
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {importStatus && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`p-3 rounded-lg border ${
+                        importStatus.type === 'success'
+                          ? 'bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400'
+                          : 'bg-destructive/10 border-destructive/20 text-destructive'
+                      }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-lg flex-shrink-0">
+                          {importStatus.type === 'success' ? '✅' : '⚠️'}
+                        </span>
+                        <span className="text-xs">{importStatus.message}</span>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  <div className="text-xs text-muted-foreground">
+                    <strong>Supported platforms:</strong> Eventbrite, Meetup, Facebook Events, and any site with event metadata
+                  </div>
+                </motion.div>
+              )}
+            </div>
+
+            {/* Import Success Message (shown after import) */}
+            {!importMode && importStatus && importStatus.type === 'success' && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 rounded-lg border bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400"
+              >
+                <div className="flex items-start gap-2">
+                  <span className="text-xl flex-shrink-0">✅</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{importStatus.message}</p>
+                    <p className="text-xs mt-1 opacity-80">
+                      You can now edit any fields below before creating the event.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setImportStatus(null)}
+                    className="flex-shrink-0"
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
             {/* Event Title */}
             <div>
               <label htmlFor="title" className="block text-sm font-medium mb-1.5 sm:mb-2">
@@ -450,6 +658,35 @@ export default function AddEvent({ user, isHost = false }) {
               )}
             </div>
 
+            {/* External Event Link */}
+            <div className="space-y-3 border border-border rounded-lg p-3 sm:p-4 bg-blue-50/50 dark:bg-blue-950/20 w-full">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">🔗</span>
+                <h3 className="text-sm font-semibold">External Event Link (Optional)</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                If this event is hosted on another platform (Eventbrite, Meetup, etc.), add the link here.
+                Attendees will be directed to the external platform for registration while still accessing Mitobyte features like check-in and feedback.
+              </p>
+              <div>
+                <label htmlFor="externalUrl" className="block text-sm font-medium mb-2">
+                  External Event URL
+                </label>
+                <Input
+                  id="externalUrl"
+                  name="externalUrl"
+                  type="url"
+                  value={formData.externalUrl}
+                  onChange={handleChange}
+                  placeholder="https://eventbrite.com/event/..."
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Leave blank if hosting directly on Mitobyte
+                </p>
+              </div>
+            </div>
+
             {/* Form Selection */}
             <div className="border border-border rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-4 w-full">
               <div className="flex items-center gap-2 mb-2">
@@ -592,7 +829,8 @@ export default function AddEvent({ user, isHost = false }) {
                     recurringEndDate: '',
                     thumbnailUrl: '',
                     checkInFormId: '',
-                    feedbackFormId: ''
+                    feedbackFormId: '',
+                    externalUrl: ''
                   })
                   setThumbnailFile(null)
                   setThumbnailPreview(null)
@@ -747,6 +985,12 @@ export default function AddEvent({ user, isHost = false }) {
                 onClick={() => {
                   setShowQRModal(false)
                   setCreatedEvent(null)
+                  try {
+                    window.history.pushState({}, '', '/')
+                    window.dispatchEvent(new Event('mitobyte:close-all-drawers'))
+                  } catch (e) {
+                    console.warn('Navigation/close event failed:', e)
+                  }
                 }}
               >
                 Done

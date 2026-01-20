@@ -1,0 +1,105 @@
+name = "mitobyte-app"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"
+
+# D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "mitobyte-users"
+database_id = "28813de3-b100-45a8-a993-53a67739e25d"
+
+# Workers AI Binding
+[ai]
+binding = "AI"
+
+# Vectorize Index Binding (removed - no longer used)
+# [[vectorize]]
+# binding = "VECTORIZE"
+# index_name = "hackathon-ideas"
+
+# ActivityPub Federation KV Store
+[[kv_namespaces]]
+binding = "FEDERATION_KV"
+id = "f5b4cdb8d2dc4d13b0441becc099ca3b"
+
+# ActivityPub Federation Queue
+[[queues.producers]]
+binding = "FEDERATION_QUEUE"
+queue = "mitobyte-federation-queue"
+
+# Queue consumers must be configured via Cloudflare Dashboard for Pages projects
+# Dashboard > Pages > Your Project > Settings > Functions > Bindings
+# [[queues.consumers]]
+# queue = "mitobyte-federation-queue"
+# max_batch_size = 10
+# max_batch_timeout = 30
+# max_retries = 3
+# dead_letter_queue = "mitobyte-federation-dlq"
+
+# Email Sending Binding - Configure via Cloudflare Dashboard
+# Note: For Pages projects, email bindings must be added in:
+# Dashboard > Pages > Your Project > Settings > Functions > Bindings
+# Add binding: Type = "Send Email", Name = "EMAIL_SENDER"
+# [[send_email]]
+# name = "EMAIL_SENDER"
+
+# Cron Triggers - Configure via Cloudflare Dashboard
+# Note: For Pages projects, cron triggers must be added in:
+# Dashboard > Pages > Your Project > Settings > Functions > Cron Triggers
+# Add two cron triggers:
+# - Daily digest: 0 9 * * *
+# - Weekly digest: 0 9 * * 1
+# [triggers]
+# crons = ["0 9 * * *", "0 9 * * 1"]
+
+# Environment variables
+[vars]
+ENVIRONMENT = "development"
+# Email configuration - update these with your domain
+SENDER_EMAIL = "noreply@mitobyte.com"
+SENDER_NAME = "Mitobyte"
+
+# Production environment
+[env.production]
+[env.production.vars]
+ENVIRONMENT = "production"
+SENDER_EMAIL = "noreply@mitobyte.com"
+SENDER_NAME = "Mitobyte"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "mitobyte-users"
+database_id = "28813de3-b100-45a8-a993-53a67739e25d"
+
+# Workers AI Binding
+[env.production.ai]
+binding = "AI"
+
+# Vectorize Index Binding (removed - no longer used)
+# [[env.production.vectorize]]
+# binding = "VECTORIZE"
+# index_name = "hackathon-ideas"
+
+# ActivityPub Federation KV Store
+[[env.production.kv_namespaces]]
+binding = "FEDERATION_KV"
+id = "b38ff4e99f374151b2632e3febe32786"
+
+# ActivityPub Federation Queue
+[[env.production.queues.producers]]
+binding = "FEDERATION_QUEUE"
+queue = "mitobyte-federation-queue-prod"
+
+# Queue consumers must be configured via Cloudflare Dashboard for Pages projects
+# Dashboard > Pages > Your Project > Settings > Functions > Bindings
+# [[env.production.queues.consumers]]
+# queue = "mitobyte-federation-queue-prod"
+# max_batch_size = 10
+# max_batch_timeout = 30
+# max_retries = 3
+# dead_letter_queue = "mitobyte-federation-dlq-prod"
+
+# Email binding - Configure via Dashboard
+# [[env.production.send_email]]
+# name = "EMAIL_SENDER"

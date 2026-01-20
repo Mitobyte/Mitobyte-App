@@ -22,21 +22,16 @@ export default function InviteRedemption({ inviteCode, isAuthenticated, user, wa
   const validateInvite = async () => {
     try {
       setLoading(true);
-      alert(`🔍 Validating invite code: ${inviteCode}`);
       const response = await fetch(`/api/invites/${inviteCode}`);
       const data = await response.json();
-      alert(`📥 Validation response: ${JSON.stringify(data, null, 2)}`);
 
       if (data.valid) {
         setInvite(data.invite);
-        alert('✅ Invite code is valid!');
       } else {
-        alert(`❌ Validation failed: ${data.error}`);
         setError(data.error || 'Invalid invite code');
       }
     } catch (err) {
       console.error('Validate invite error:', err);
-      alert(`🚨 Validation error: ${err.message}`);
       setError('Failed to validate invite code');
     } finally {
       setLoading(false);

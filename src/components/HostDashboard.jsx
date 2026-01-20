@@ -10,11 +10,12 @@ import AddEvent from './admin/AddEvent';
 import FormTemplateManager from './admin/FormTemplateManager';
 import AIEventCreator from './admin/AIEventCreator';
 import EventCSVUpload from './admin/EventCSVUpload';
+import DocsViewer from './DocsViewer';
 import { updateEvent, deleteEvent } from '../services/eventApi';
 import mitobyteLogoLarge from '../mitobyte-c-large.png';
 
 export default function HostDashboard({ user, dbUser, onBack, isInDrawer = false }) {
-  const [activeTab, setActiveTab] = useState('events'); // 'events', 'create', 'forms'
+  const [activeTab, setActiveTab] = useState('events'); // 'events', 'create', 'forms', 'docs'
   const [myEvents, setMyEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedEventForQR, setSelectedEventForQR] = useState(null);
@@ -269,7 +270,8 @@ export default function HostDashboard({ user, dbUser, onBack, isInDrawer = false
               { id: 'create', label: 'Create Event', icon: '➕' },
               { id: 'csv-import', label: 'Import CSV', icon: '📤' },
               { id: 'ai-create', label: 'Create with AI', icon: '🤖' },
-              { id: 'forms', label: 'Form Templates', icon: '📋' }
+              { id: 'forms', label: 'Form Templates', icon: '📋' },
+              { id: 'docs', label: 'Documentation', icon: '📖' }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -681,6 +683,11 @@ export default function HostDashboard({ user, dbUser, onBack, isInDrawer = false
               <FormTemplateManager adminEmail={user?.email} isHost={!isAdmin} />
             </CardContent>
           </Card>
+        )}
+
+        {/* Documentation Tab */}
+        {activeTab === 'docs' && (
+          <DocsViewer role="host" />
         )}
       </div>
 

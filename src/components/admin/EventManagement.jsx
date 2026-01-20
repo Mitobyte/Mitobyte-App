@@ -593,6 +593,32 @@ function EventModal({ event, user, onClose, onSuccess }) {
     setError(null)
 
     try {
+      // Ensure native validation runs (especially in the modal)
+      const formEl = e.currentTarget
+      if (formEl && formEl.checkValidity && !formEl.checkValidity()) {
+        formEl.reportValidity && formEl.reportValidity()
+        setIsSubmitting(false)
+        return
+      }
+
+      // Additional trimmed validation for text inputs
+      const title = (formData.title || '').trim()
+      const description = (formData.description || '').trim()
+      const locationVal = (formData.location || '').trim()
+      const dateVal = formData.date || ''
+      const timeVal = formData.time || ''
+      const missing = []
+      if (!title) missing.push('Event Title')
+      if (!description) missing.push('Description')
+      if (!dateVal) missing.push('Date')
+      if (!timeVal) missing.push('Time')
+      if (!locationVal) missing.push('Location')
+      if (missing.length) {
+        setError(`Please fill in required fields: ${missing.join(', ')}`)
+        setIsSubmitting(false)
+        return
+      }
+
       let thumbnailUrl = formData.thumbnailUrl
 
       // Upload thumbnail if file is selected
@@ -623,12 +649,12 @@ function EventModal({ event, user, onClose, onSuccess }) {
       }
 
       const eventData = {
-        title: formData.title,
-        description: formData.description,
+        title,
+        description,
         eventType: formData.eventType,
-        date: formData.date,
-        time: formData.time,
-        location: formData.location,
+        date: dateVal,
+        time: timeVal,
+        location: locationVal,
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         createdBy: user?.email || null,
         isRecurring: formData.isRecurring,

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+
+    <!-- Mobile-first viewport settings -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+
+    <!-- PWA and mobile meta tags -->
+    <meta name="description" content="Mitobyte - Connecting Milwaukee developers through networking events, hackathons, and collaborative innovation" />
+    <meta name="theme-color" content="#0ea5e9" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Mitobyte" />
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- OneSignal Push Notifications -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        console.log('[OneSignal] Initializing...');
+        try {
+          await OneSignal.init({
+            appId: "d583c0e5-bae4-452a-be0c-c7c9156b9261",
+            safari_web_id: "web.onesignal.auto.61cc1b76-79db-483e-a0b9-263210abb193",
+            notifyButton: {
+              enable: false,  // Disabled - using custom notification bell in top nav
+            },
+            allowLocalhostAsSecureOrigin: true,
+          });
+          console.log('[OneSignal] Initialized successfully');
+
+          // Check subscription status
+          const isPushSupported = await OneSignal.Notifications.isPushSupported();
+          const permission = await OneSignal.Notifications.permission;
+          console.log('[OneSignal] Push supported:', isPushSupported);
+          console.log('[OneSignal] Permission:', permission);
+        } catch (error) {
+          console.error('[OneSignal] Initialization error:', error);
+        }
+      });
+    </script>
+
+    <title>Mitobyte - Milwaukee Tech Community</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

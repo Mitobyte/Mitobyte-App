@@ -47,8 +47,8 @@ export async function onRequestGet({ request, env }) {
         }
       }
 
-      // Check if uses remaining
-      if (inviteCode.uses_remaining <= 0) {
+      // Check if uses remaining (NULL means unlimited)
+      if (inviteCode.uses_remaining !== null && inviteCode.uses_remaining <= 0) {
         return new Response(
           JSON.stringify({ success: false, valid: false, error: 'Invite code has been fully used' }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -167,7 +167,8 @@ export async function onRequestPost({ request, env }) {
     // Generate new invite code
     if (action === 'generate') {
       const newCode = generateInviteCode()
-      const uses = maxUses || 1
+      // NULL means unlimited uses, otherwise use the specified maxUses (default to 1 if not specified)
+      const uses = maxUses === 0 ? null : (maxUses || 1)
       const expiresAt = expiresInDays
         ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString()
         : null

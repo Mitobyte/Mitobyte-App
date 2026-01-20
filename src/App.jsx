@@ -67,6 +67,74 @@ function App() {
     return () => window.removeEventListener('popstate', handleLocationChange)
   }, [])
 
+  // Intercept internal link clicks to enable SPA navigation without full reload
+  useEffect(() => {
+    const handleDocumentClick = (e) => {
+      // Respect modified clicks (new tab, etc.)
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+
+      // Find nearest anchor
+      const anchor = e.target.closest && e.target.closest('a[href]')
+      if (!anchor) return
+
+      // Ignore if target is external or has target/_download
+      const href = anchor.getAttribute('href')
+      if (!href || href.startsWith('http') && !href.startsWith(window.location.origin)) return
+      if (anchor.target && anchor.target !== '_self') return
+      if (anchor.hasAttribute('download')) return
+
+      // Build absolute URL
+      const url = new URL(href, window.location.origin)
+
+      // Only intercept same-origin navigations
+      if (url.origin !== window.location.origin) return
+
+      // If navigating to same path, do nothing
+      const nextPath = url.pathname + url.search + url.hash
+      const currPath = window.location.pathname + window.location.search + window.location.hash
+      if (nextPath === currPath) return
+
+      // Intercept and route inside the app
+      e.preventDefault()
+      window.history.pushState({}, '', nextPath)
+      setCurrentPath(url.pathname)
+      setSearchParams(url.searchParams)
+    }
+
+    document.addEventListener('click', handleDocumentClick)
+    return () => document.removeEventListener('click', handleDocumentClick)
+  }, [])
+
+  // Safety: clear any zombie backdrops/overlays that might block clicks after navigation
+  const clearZombieBackdrops = React.useCallback(() => {
+    try {
+      const candidates = Array.from(document.querySelectorAll('*'))
+        .filter(el => {
+          const cls = el.className || ''
+          if (typeof cls !== 'string') return false
+          if (!cls.includes('fixed') || !cls.includes('inset-0')) return false
+          // Likely a backdrop overlay
+          const looksLikeBackdrop = cls.includes('bg-black') || cls.includes('backdrop-blur') || cls.includes('z-50')
+          return looksLikeBackdrop
+        })
+
+      candidates.forEach(el => {
+        // Only neutralize pointer events; do not remove DOM to avoid breaking animations
+        el.style.pointerEvents = 'none'
+        el.style.display = 'none'
+      })
+    } catch (err) {
+      console.warn('Backdrop cleanup failed:', err)
+    }
+  }, [])
+
+  // Run cleanup on home route and on any path change as a guard
+  useEffect(() => {
+    // Short timeout to let exit animations run, then clean
+    const t = setTimeout(clearZombieBackdrops, 150)
+    return () => clearTimeout(t)
+  }, [currentPath, clearZombieBackdrops])
+
   // Add debug log helper
   const addDebugLog = (message, data = {}) => {
     const timestamp = new Date().toLocaleTimeString()
@@ -396,6 +464,37 @@ function App() {
       setViewedWalletAddress(null)
     }
   }, [currentPath])
+
+  // Ensure admin/host/sponsor drawers are closed on route changes to home
+  useEffect(() => {
+    if (currentPath === '/') {
+      setShowAdmin(false)
+      setShowHost(false)
+      setShowSponsor(false)
+    }
+  }, [currentPath])
+
+  // Global: listen for a custom event to close all drawers/overlays and navigate home
+  useEffect(() => {
+    const closeAll = () => {
+      setShowAdmin(false)
+      setShowHost(false)
+      setShowSponsor(false)
+      setShowEventCheckInDrawer(false)
+      setShowEventFeedbackDrawer(false)
+      setShowEventDetailDrawer(false)
+      setShowProfileDrawer(false)
+      try {
+        if (window.location.pathname !== '/') {
+          window.history.pushState({}, '', '/')
+        }
+        setCurrentPath('/')
+        setSearchParams(new URLSearchParams(''))
+      } catch {}
+    }
+    window.addEventListener('mitobyte:close-all-drawers', closeAll)
+    return () => window.removeEventListener('mitobyte:close-all-drawers', closeAll)
+  }, [])
 
   // Handle drawer closing - reset URL
   const handleCloseEventCheckIn = () => {
