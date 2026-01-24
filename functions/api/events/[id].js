@@ -191,6 +191,22 @@ export async function onRequestDelete(context) {
     }
 
     const currentEvent = results[0];
+
+    // START: Blacklist external URL if present
+    if (currentEvent.external_url) {
+      try {
+        await context.env.DB.prepare(
+          'INSERT OR IGNORE INTO deleted_external_events (external_url) VALUES (?)'
+        )
+          .bind(currentEvent.external_url)
+          .run();
+        console.log(`Added ${currentEvent.external_url} to deleted events blacklist`);
+      } catch (e) {
+        console.error("Failed to blacklist external URL", e);
+      }
+    }
+    // END: Blacklist external URL
+
     let deletedCount = 0;
 
     if (deleteSeries) {
@@ -199,7 +215,7 @@ export async function onRequestDelete(context) {
 
       // Get all events in the series (parent + all children)
       const { results: seriesEvents } = await context.env.DB.prepare(
-        'SELECT id FROM events WHERE id = ? OR parent_event_id = ?'
+        'SELECT id, external_url FROM events WHERE id = ? OR parent_event_id = ?'
       )
         .bind(parentId, parentId)
         .all();
@@ -207,6 +223,12 @@ export async function onRequestDelete(context) {
       // Delete all events in the series
       // CASCADE DELETE will handle all related records for each event
       for (const event of seriesEvents) {
+        // Also blacklist any series instances if they have different external URLs (unlikely but safe)
+        if (event.external_url) {
+          await context.env.DB.prepare('INSERT OR IGNORE INTO deleted_external_events (external_url) VALUES (?)')
+            .bind(event.external_url).run().catch(() => { });
+        }
+
         await context.env.DB.prepare(
           'DELETE FROM events WHERE id = ?'
         )
