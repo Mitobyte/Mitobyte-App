@@ -21,6 +21,7 @@ import MobileMenu from './MobileMenu'
 import AddEvent from './admin/AddEvent'
 import AIEventCreator from './admin/AIEventCreator'
 import EventCSVUpload from './admin/EventCSVUpload'
+import SyncTrigger from './admin/SyncTrigger'
 import EventAnalytics from './EventAnalytics'
 import { getAllUsers, promoteUserToAdmin, demoteUserFromAdmin, promoteUserToHost, demoteUserFromHost, promoteUserToSponsor, demoteUserFromSponsor, deleteUser, suspendUser, unsuspendUser } from '../services/adminApi'
 import { updateEvent, deleteEvent as deleteEventApi } from '../services/eventApi'
@@ -115,6 +116,31 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
       fetchEvents()
     }
   }, [activeTab, user?.email])
+
+  const handleSyncMeetups = async () => {
+    try {
+      setEventsLoading(true);
+      const response = await fetch('/api/sync-meetup-events', { method: 'POST' });
+      const result = await response.json();
+
+      if (result.success) {
+        alert(result.message || 'Sync successful!');
+        // Refresh events list
+        const eventsResponse = await fetch('/api/events');
+        const eventsData = await eventsResponse.json();
+        if (eventsData.events) {
+          setAllEvents(eventsData.events);
+        }
+      } else {
+        alert('Sync failed: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Sync error:', error);
+      alert('Failed to sync events');
+    } finally {
+      setEventsLoading(false);
+    }
+  };
 
   // Filter and search events
   const filteredEvents = useMemo(() => {
@@ -598,11 +624,10 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative pb-4 px-2 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-                    activeTab === tab.id
-                      ? 'text-primary'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                  className={`relative pb-4 px-2 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
+                    ? 'text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                    }`}
                 >
                   <span className="flex items-center space-x-2">
                     <span className="text-base">{tab.icon}</span>
@@ -681,6 +706,7 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
                   {[
                     { id: 'my-events', label: 'All Events', icon: '📅' },
                     { id: 'create', label: 'Create Event', icon: '➕' },
+                    { id: 'sync-meetups', label: 'Sync Meetups', icon: '🔄' },
                     { id: 'csv-import', label: 'Import CSV', icon: '📤' },
                     { id: 'ai-create', label: 'Create with AI', icon: '🤖' },
                     { id: 'forms', label: 'Form Templates', icon: '📋' }
@@ -688,11 +714,10 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
                     <button
                       key={tab.id}
                       onClick={() => setEventsSubTab(tab.id)}
-                      className={`relative pb-4 px-2 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-                        eventsSubTab === tab.id
-                          ? 'text-primary'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
+                      className={`relative pb-4 px-2 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${eventsSubTab === tab.id
+                        ? 'text-primary'
+                        : 'text-muted-foreground hover:text-foreground'
+                        }`}
                     >
                       <span className="flex items-center space-x-2">
                         <span className="text-base">{tab.icon}</span>
@@ -709,6 +734,19 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
                   ))}
                 </nav>
               </div>
+
+              {/* Sync Logic Handler */}
+              {eventsSubTab === 'sync-meetups' && (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold mb-4">Syncing Events from Meetup...</h3>
+                    <div className="animate-spin text-4xl mb-4">🔄</div>
+                    <p className="text-muted-foreground">Please wait while we fetch the latest events.</p>
+                  </div>
+                  {/* trigger sync on mount of this view */}
+                  <SyncTrigger onSync={handleSyncMeetups} onComplete={() => setEventsSubTab('my-events')} />
+                </div>
+              )}
 
               {/* All Events Sub-tab */}
               {eventsSubTab === 'my-events' && (
