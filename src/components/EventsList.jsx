@@ -33,7 +33,7 @@ export default function EventsList({ user, walletAddress }) {
     fetchEvents()
   }, [filter, viewMode])
 
-  // Sync Meetup events every 5 seconds
+  // Sync Meetup events once on mount (no polling)
   useEffect(() => {
     const syncEvents = async () => {
       try {
@@ -43,18 +43,16 @@ export default function EventsList({ user, walletAddress }) {
         const data = await response.json();
         if (data.success && data.count > 0) {
           console.log(`Synced ${data.count} events from Meetup`);
-          fetchEvents(); // Refresh list if neccessary
+          fetchEvents(); // Refresh list if new events synced
         }
       } catch (e) {
-        console.error("Background sync failed", e);
+        // Silent fail - sync is background task
+        console.warn("Background sync failed", e);
       }
     };
 
-    // Initial sync
+    // Sync once on mount
     syncEvents();
-
-    const interval = setInterval(syncEvents, 5000);
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {

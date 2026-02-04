@@ -1,8 +1,7 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import { Input } from '../ui/input';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
+import { MemberCard } from './MemberCard';
+import { DirectoryFilters } from './DirectoryFilters';
 
 export function MemberDirectory({ currentUserWallet }) {
   const [members, setMembers] = useState([]);
@@ -17,8 +16,6 @@ export function MemberDirectory({ currentUserWallet }) {
   const [activeTab, setActiveTab] = useState('all'); // 'all' or 'connections'
   const [connections, setConnections] = useState([]);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
-
-  const popularSkills = ['All', 'React', 'Python', 'JavaScript', 'TypeScript', 'Node.js', 'AI/ML', 'Backend', 'Frontend', 'Design'];
 
   useEffect(() => {
     fetchMembers();
@@ -160,17 +157,15 @@ export function MemberDirectory({ currentUserWallet }) {
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode('grid')}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                viewMode === 'grid' ? 'bg-primary/10 text-primary' : 'hover:bg-foreground/5'
-              }`}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${viewMode === 'grid' ? 'bg-primary/10 text-primary' : 'hover:bg-foreground/5'
+                }`}
             >
               ⊞
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                viewMode === 'list' ? 'bg-primary/10 text-primary' : 'hover:bg-foreground/5'
-              }`}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${viewMode === 'list' ? 'bg-primary/10 text-primary' : 'hover:bg-foreground/5'
+                }`}
             >
               ☰
             </button>
@@ -182,151 +177,64 @@ export function MemberDirectory({ currentUserWallet }) {
           <div className="flex gap-2 border-b border-border">
             <button
               onClick={() => setActiveTab('all')}
-              className={`px-4 py-2 font-medium transition-colors ${
-                activeTab === 'all'
+              className={`px-4 py-2 font-medium transition-colors ${activeTab === 'all'
                   ? 'text-primary border-b-2 border-primary'
                   : 'text-muted-foreground hover:text-foreground'
-              }`}
+                }`}
             >
               All Members ({members.length})
             </button>
             <button
               onClick={() => setActiveTab('connections')}
-              className={`px-4 py-2 font-medium transition-colors ${
-                activeTab === 'connections'
+              className={`px-4 py-2 font-medium transition-colors ${activeTab === 'connections'
                   ? 'text-primary border-b-2 border-primary'
                   : 'text-muted-foreground hover:text-foreground'
-              }`}
+                }`}
             >
               My Connections ({connections.length})
             </button>
           </div>
         )}
 
-        {/* Privacy notice */}
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm">
-          <p className="text-foreground/80">
-            🔒 <strong>Privacy Control:</strong> Want to opt out of the directory? Go to your <button onClick={() => {
-              window.history.pushState({}, '', '/settings');
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }} className="text-primary hover:underline font-medium">Settings</button> and change your Profile Visibility to "Private".
-          </p>
-        </div>
-      </div>
-
-      {/* Search & Filters */}
-      <div className="space-y-3">
-        {/* AI Search Banner */}
-        {aiSearchMode && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-4 rounded-lg bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">✨</span>
-                <div>
-                  <p className="font-semibold">AI Search Active</p>
-                  <p className="text-sm text-muted-foreground">
-                    Showing {aiSearchResults.length} AI-matched members for "{aiSearchQuery}"
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={clearAiSearch}
-                className="px-4 py-2 rounded-full text-sm font-medium border border-border hover:bg-foreground/5 transition-colors"
-              >
-                Clear
-              </button>
-            </div>
-          </motion.div>
+        {/* Privacy notice - Only show if user is logged in */}
+        {currentUserWallet && (
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm">
+            <p className="text-foreground/80">
+              🔒 <strong>Privacy Control:</strong> Want to opt out of the directory? Go to your <button onClick={() => {
+                window.history.pushState({}, '', '/settings');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }} className="text-primary hover:underline font-medium">Settings</button> and change your Profile Visibility to "Private".
+            </p>
+          </div>
         )}
 
-        {/* Quick search */}
-        <Input
-          placeholder="🔍 Quick search by name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-
-        {/* AI Semantic search */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Input
-              placeholder="✨ Try: 'React developers', 'designers in Milwaukee', 'backend experts'..."
-              value={aiSearchQuery}
-              onChange={(e) => {
-                setAiSearchQuery(e.target.value);
-                if (aiSearchMode) setAiSearchMode(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && aiSearchQuery.trim()) {
-                  handleAiSearch();
-                }
-              }}
-              className="border-primary/30"
-            />
-          </div>
-          <button
-            onClick={handleAiSearch}
-            disabled={aiSearching || !aiSearchQuery.trim()}
-            className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-          >
-            {aiSearching ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block mr-2" />
-                Searching...
-              </>
-            ) : (
-              <>
-                <span className="mr-2">✨</span>
-                AI Search
-              </>
-            )}
-          </button>
-        </div>
-
-        <p className="text-xs text-muted-foreground">
-          💡 Tip: Use natural language like "frontend developers" or "Python experts" for AI-powered discovery
-        </p>
-
-        {/* Skill filters */}
-        <div className="flex flex-wrap gap-2">
-          {popularSkills.map((skill) => (
-            <button
-              key={skill}
-              onClick={() => setFilterSkill(skill === 'All' ? 'all' : skill)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                (skill === 'All' && filterSkill === 'all') || filterSkill === skill
-                  ? 'bg-primary text-primary-foreground'
-                  : 'border border-border hover:bg-foreground/5'
-              }`}
-            >
-              {skill}
-            </button>
-          ))}
-        </div>
-
-        {/* Active filters display */}
-        {(searchTerm || aiSearchMode || filterSkill !== 'all') && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Showing {filteredMembers.length} of {members.length} members</span>
-            {(searchTerm || aiSearchMode || filterSkill !== 'all') && (
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  clearAiSearch();
-                  setFilterSkill('all');
-                }}
-                className="text-primary hover:underline"
-              >
-                Clear filters
-              </button>
-            )}
+        {/* Public view notice */}
+        {!currentUserWallet && (
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm flex items-center justify-between">
+            <p className="text-foreground/80">
+              👋 <strong>Join the community!</strong> Connect with these developers by creating a profile.
+            </p>
           </div>
         )}
       </div>
+
+      {/* Filters */}
+      <DirectoryFilters
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        aiSearchQuery={aiSearchQuery}
+        setAiSearchQuery={setAiSearchQuery}
+        aiSearchMode={aiSearchMode}
+        setAiSearchMode={setAiSearchMode}
+        aiSearching={aiSearching}
+        handleAiSearch={handleAiSearch}
+        clearAiSearch={clearAiSearch}
+        filterSkill={filterSkill}
+        setFilterSkill={setFilterSkill}
+        filteredCount={filteredMembers.length}
+        totalCount={members.length}
+        aiSearchResultsCount={aiSearchResults.length}
+      />
 
       {/* Members Grid/List */}
       {loading ? (
@@ -339,244 +247,34 @@ export function MemberDirectory({ currentUserWallet }) {
           : 'space-y-3'
         }>
           {filteredMembers.map((member, index) => (
-            <div key={member.wallet_hash} className="relative">
+            <motion.div
+              key={member.wallet_hash || index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="relative"
+            >
               {/* AI Match Badge */}
               {aiSearchMode && member.relevance_score && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="absolute -top-3 -right-3 z-10"
-                >
+                <div className="absolute -top-3 -right-3 z-10">
                   <div className="px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-bold shadow-lg">
                     {Math.round(member.relevance_score * 100)}% Match
                   </div>
-                </motion.div>
-              )}
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className={`bg-card border border-border rounded-xl overflow-hidden transition-all ${
-                  viewMode === 'list' ? 'p-4' : ''
-                }`}
-              >
-              {viewMode === 'grid' ? (
-                // Grid View - Card Style
-                <div className="flex flex-col">
-                  {/* Avatar - Large at top */}
-                  <div className="aspect-square w-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center overflow-hidden">
-                    {member.avatar_url ? (
-                      <img
-                        src={member.avatar_url}
-                        alt={member.display_name || 'Member'}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
-                    <div
-                      className="w-full h-full flex items-center justify-center text-6xl font-bold bg-gradient-to-br from-primary/30 to-primary/60 text-primary-foreground"
-                      style={{ display: member.avatar_url ? 'none' : 'flex' }}
-                    >
-                      {(member.display_name || member.email || 'M')[0].toUpperCase()}
-                    </div>
-                  </div>
-
-                  {/* Profile Info */}
-                  <div className="p-4 space-y-3">
-                    {/* Name & Tagline */}
-                    <div>
-                      <h3 className="font-bold text-lg truncate">
-                        {member.display_name || member.email?.split('@')[0] || 'Member'}
-                      </h3>
-                      {member.tagline && (
-                        <p className="text-sm text-muted-foreground italic truncate">
-                          {member.tagline}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Location */}
-                    {member.location && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <span>📍</span>
-                        <span className="truncate">{member.location}</span>
-                      </div>
-                    )}
-
-                    {/* Bio */}
-                    {member.bio && (
-                      <p className="text-sm text-muted-foreground line-clamp-3">
-                        {member.bio}
-                      </p>
-                    )}
-
-                    {/* Skills */}
-                    {member.skills && (
-                      <div className="flex flex-wrap gap-1">
-                        {JSON.parse(member.skills).slice(0, 4).map((skill, i) => (
-                          <Badge key={i} variant="secondary" className="text-xs">
-                            {skill}
-                          </Badge>
-                        ))}
-                        {JSON.parse(member.skills).length > 4 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{JSON.parse(member.skills).length - 4}
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Interests */}
-                    {member.interests && (
-                      <div className="text-xs text-muted-foreground">
-                        <span className="font-medium">Interests:</span> {JSON.parse(member.interests).slice(0, 3).join(', ')}
-                        {JSON.parse(member.interests).length > 3 && '...'}
-                      </div>
-                    )}
-
-                    {/* Contact Methods - Prominently displayed */}
-                    <div className="pt-2 mt-2 border-t border-border/50 space-y-1">
-                      <p className="text-xs font-semibold text-foreground/70 mb-1">📞 Contact:</p>
-                      {member.website && (
-                        <a href={member.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">
-                          <span>🌐</span> <span className="truncate">{member.website}</span>
-                        </a>
-                      )}
-                      {member.github_username && (
-                        <a href={`https://github.com/${member.github_username}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">
-                          <span>💻</span> <span>GitHub: {member.github_username}</span>
-                        </a>
-                      )}
-                      {member.twitter_username && (
-                        <a href={`https://twitter.com/${member.twitter_username}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">
-                          <span>🐦</span> <span>@{member.twitter_username}</span>
-                        </a>
-                      )}
-                      {member.linkedin_url && (
-                        <a href={member.linkedin_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">
-                          <span>💼</span> <span>LinkedIn</span>
-                        </a>
-                      )}
-                      {member.discord_username && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <span>💬</span> <span>Discord: {member.discord_username}</span>
-                        </div>
-                      )}
-                      {!member.website && !member.github_username && !member.twitter_username && !member.linkedin_url && !member.discord_username && (
-                        <p className="text-xs text-muted-foreground italic">No contact info yet</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                // List View - Horizontal Layout
-                <div className="flex items-start gap-4">
-                  {/* Avatar */}
-                  <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-primary/30 to-primary/60">
-                    {member.avatar_url ? (
-                      <img
-                        src={member.avatar_url}
-                        alt={member.display_name || 'Member'}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
-                    <div
-                      className="w-full h-full flex items-center justify-center text-2xl font-bold text-primary-foreground"
-                      style={{ display: member.avatar_url ? 'none' : 'flex' }}
-                    >
-                      {(member.display_name || member.email || 'M')[0].toUpperCase()}
-                    </div>
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <div>
-                      <h3 className="font-bold text-lg">
-                        {member.display_name || member.email?.split('@')[0] || 'Member'}
-                      </h3>
-                      {member.tagline && (
-                        <p className="text-sm text-muted-foreground italic">
-                          {member.tagline}
-                        </p>
-                      )}
-                    </div>
-
-                    {member.location && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <span>📍</span>
-                        <span>{member.location}</span>
-                      </div>
-                    )}
-
-                    {member.bio && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {member.bio}
-                      </p>
-                    )}
-
-                    <div className="flex flex-wrap gap-2 items-center">
-                      {/* Skills */}
-                      {member.skills && JSON.parse(member.skills).slice(0, 5).map((skill, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    {/* Contact Methods - List View */}
-                    <div className="pt-2 mt-2 border-t border-border/50">
-                      <p className="text-xs font-semibold text-foreground/70 mb-1">📞 Contact:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {member.website && (
-                          <a href={member.website} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                            🌐 Website
-                          </a>
-                        )}
-                        {member.github_username && (
-                          <a href={`https://github.com/${member.github_username}`} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                            💻 GitHub
-                          </a>
-                        )}
-                        {member.twitter_username && (
-                          <a href={`https://twitter.com/${member.twitter_username}`} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                            🐦 Twitter
-                          </a>
-                        )}
-                        {member.linkedin_url && (
-                          <a href={member.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                            💼 LinkedIn
-                          </a>
-                        )}
-                        {member.discord_username && (
-                          <span className="text-xs px-2 py-1 rounded-full bg-foreground/5 text-muted-foreground">
-                            💬 {member.discord_username}
-                          </span>
-                        )}
-                        {!member.website && !member.github_username && !member.twitter_username && !member.linkedin_url && !member.discord_username && (
-                          <span className="text-xs text-muted-foreground italic">No contact info</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
-              </motion.div>
+
+              <MemberCard
+                member={member}
+                viewMode={viewMode}
+                aiSearchMode={aiSearchMode}
+              />
 
               {/* AI Match Reason */}
               {aiSearchMode && member.match_reason && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 + 0.1 }}
+                  transition={{ delay: 0.1 }}
                   className="mt-2 p-3 rounded-lg bg-purple-500/5 border border-purple-500/20"
                 >
                   <p className="text-xs text-muted-foreground">
@@ -585,7 +283,7 @@ export function MemberDirectory({ currentUserWallet }) {
                   </p>
                 </motion.div>
               )}
-            </div>
+            </motion.div>
           ))}
         </div>
       ) : (

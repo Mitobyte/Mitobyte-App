@@ -23,11 +23,10 @@ export async function onRequestGet(context) {
         up.discord_username,
         up.skills,
         up.interests,
-        COALESCE(us.profile_visibility, 'public') as profile_visibility
+        COALESCE(up.profile_visibility, 'public') as profile_visibility
       FROM users u
       LEFT JOIN user_profiles up ON u.id = up.user_id
-      LEFT JOIN user_settings us ON u.id = us.user_id
-      WHERE COALESCE(us.profile_visibility, 'public') != 'private'
+      WHERE COALESCE(up.profile_visibility, 'public') != 'private'
       ORDER BY u.created_at DESC
       LIMIT 100
     `).all();

@@ -29,6 +29,8 @@ import { HackLandingPage } from './components/events/HackLandingPage'
 import { HackEventDetailPage } from './components/events/HackEventDetailPage'
 import { HackreationAdmin } from './components/events/HackreationAdmin'
 import mitobyteLogoLarge from './mitobyte-c-large.png'
+import { MemberDirectory } from './components/community/MemberDirectory'
+import { LandingPage } from './components/LandingPage'
 
 function App() {
   const [darkMode, setDarkMode] = useState(false)
@@ -383,13 +385,7 @@ function App() {
     checkProfileCompletion()
   }, [status, dbUser, wallet?.address, user?.email, profileComplete])
 
-  // Auto-rotate carousel - must be before any conditional returns
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % 4) // 4 benefits
-    }, 4000)
-    return () => clearInterval(timer)
-  }, [])
+
 
   // Handle onboarding completion
   const handleOnboardingComplete = () => {
@@ -732,6 +728,66 @@ function App() {
     )
   }
 
+  // PUBLIC: Directory page - accessible without login
+  if (currentPath === '/dir') {
+    const walletAddress = wallet?.address || (user?.email ? `email:${user.email}` : null)
+    console.log('📍 RENDERING: Member Directory (Public Access)')
+
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        {/* Minimal Header */}
+        <header className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border/40 z-40">
+          <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+            {/* Logo */}
+            <button
+              onClick={() => {
+                window.history.pushState({}, '', '/')
+                setCurrentPath('/')
+              }}
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            >
+              <img
+                src={mitobyteLogoLarge}
+                alt="Mitobyte"
+                className="h-6 w-auto"
+              />
+            </button>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2">
+              {isAuthenticated ? (
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    window.history.pushState({}, '', '/')
+                    setCurrentPath('/')
+                  }}
+                >
+                  Go to Dashboard
+                </Button>
+              ) : (
+                <Button onClick={handleJoinCommunity}>
+                  Join Community
+                </Button>
+              )}
+              <button
+                onClick={toggleDarkMode}
+                className="w-9 h-9 rounded-full hover:bg-foreground/5 flex items-center justify-center transition-colors"
+                aria-label="Toggle theme"
+              >
+                <span className="text-sm">{darkMode ? '☀️' : '🌙'}</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
+          <MemberDirectory currentUserWallet={walletAddress} />
+        </main>
+      </div>
+    )
+  }
+
   // PUBLIC: Hack Hub page - accessible without login
   if (currentPath === '/hack') {
     const walletAddress = wallet?.address || (user?.email ? `email:${user.email}` : null)
@@ -933,275 +989,29 @@ function App() {
     )
   }
 
-  // Show public events view for non-authenticated users
-  if (showPublicEvents && !isAuthenticated) {
-    return (
-      <div className="min-h-screen flex flex-col pb-20">
-        {/* Header - Responsive */}
-        <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex justify-between items-center gap-2">
-              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                <Button
-                  onClick={() => setShowPublicEvents(false)}
-                  variant="ghost"
-                  size="sm"
-                  className="flex-shrink-0"
-                >
-                  <span className="hidden sm:inline">← Back</span>
-                  <span className="sm:hidden">←</span>
-                </Button>
-                <img
-                  src={mitobyteLogoLarge}
-                  alt="Mitobyte"
-                  className="h-6 sm:h-8 w-auto"
-                />
-              </div>
-              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                <PWAInstallButton variant="ghost" size="icon" className="rounded-full" />
-                <Button
-                  onClick={toggleDarkMode}
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full"
-                >
-                  {darkMode ? '☀️' : '🌙'}
-                </Button>
-                <Button
-                  onClick={handleJoinCommunity}
-                  variant="default"
-                  size="sm"
-                  disabled={status === 'loading'}
-                  className="whitespace-nowrap"
-                >
-                  {status === 'loading' ? 'Connecting...' : <><span className="hidden sm:inline">Join to RSVP</span><span className="sm:hidden">Join</span></>}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Events List */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-6">
-            <h1 className="text-3xl sm:text-4xl font-bold mb-2">Upcoming Events</h1>
-            <p className="text-muted-foreground">
-              Discover and join Milwaukee's tech community events. Sign in to RSVP!
-            </p>
-          </div>
-          <EventsList user={null} walletAddress={null} />
-        </div>
-
-        {/* Event Check-In Drawer - Works for non-authenticated users */}
-        <EventCheckInDrawer
-          isOpen={showEventCheckInDrawer}
-          onClose={handleCloseEventCheckIn}
-          eventId={selectedEventId}
-        />
-
-        {/* Event Feedback Drawer - Works for non-authenticated users (anonymous) */}
-        <EventFeedbackDrawer
-          isOpen={showEventFeedbackDrawer}
-          onClose={handleCloseEventFeedback}
-          eventId={selectedEventId}
-        />
-
-        {/* Event Detail Drawer - Works for non-authenticated users */}
-        {selectedEventDetail && (
-          <EventDetailDrawer
-            event={selectedEventDetail}
-            onClose={handleCloseEventDetail}
-            onRsvp={() => alert('Please sign in to RSVP for events')}
-            rsvpStatus={null}
-            walletAddress={null}
-            onViewProfile={() => alert('Please sign in to view profiles')}
-          />
-        )}
-      </div>
-    )
-  }
-
-  // Landing page - Show when not authenticated
+  // Landing Page for Guest Users
   return (
-    <div className="min-h-screen flex flex-col p-4 sm:p-6 md:p-8">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8 sm:mb-12">
-        <motion.img
-          src={mitobyteLogoLarge}
-          alt="Mitobyte"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="h-10 sm:h-12 md:h-14 w-auto"
-        />
-        <div className="flex gap-2 items-center">
-          <PWAInstallButton variant="ghost" size="icon" className="rounded-full" />
-          <Button
-            onClick={toggleDarkMode}
-            variant="ghost"
-            size="icon"
-            className="rounded-full"
-          >
-            {darkMode ? '☀️' : '🌙'}
-          </Button>
-        </div>
-      </div>
+    <>
+      <LandingPage
+        darkMode={darkMode}
+        toggleDarkMode={toggleDarkMode}
+        handleJoinCommunity={handleJoinCommunity}
+        status={status}
+      />
 
-      {/* Main Content - Centered */}
-      <div className="flex-1 flex flex-col items-center justify-center max-w-lg mx-auto w-full">
-
-        {/* Carousel */}
-        <div className="w-full mb-8 sm:mb-12">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentIndex}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5 }}
-              className="text-center"
-            >
-              {/* Icon */}
-              <motion.div
-                className="text-8xl sm:text-9xl md:text-[10rem] mb-6 sm:mb-8"
-                animate={{
-                  scale: [1, 1.05, 1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              >
-                {currentBenefit.icon}
-              </motion.div>
-
-              {/* Title */}
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
-                {currentBenefit.title}
-              </h2>
-
-              {/* Description */}
-              <p className="text-base sm:text-lg md:text-xl text-muted-foreground px-4">
-                {currentBenefit.description}
-              </p>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Carousel Indicators */}
-          <div className="flex justify-center items-center gap-2 mt-8">
-            <button
-              onClick={goToPrev}
-              className="p-2 hover:bg-accent rounded-full transition-colors"
-              aria-label="Previous"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="15 18 9 12 15 6"></polyline>
-              </svg>
-            </button>
-
-            <div className="flex gap-2 mx-4">
-              {benefits.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentIndex(index)}
-                  className={`h-2 rounded-full transition-all ${index === currentIndex
-                    ? 'w-8 bg-primary'
-                    : 'w-2 bg-muted-foreground/30'
-                    }`}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
-              ))}
-            </div>
-
-            <button
-              onClick={goToNext}
-              className="p-2 hover:bg-accent rounded-full transition-colors"
-              aria-label="Next"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="9 18 15 12 9 6"></polyline>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* CTA Buttons */}
-        <div className="w-full space-y-3 sm:space-y-4">
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <Button
-              size="lg"
-              className="w-full h-14 sm:h-16 text-base sm:text-lg font-semibold rounded-full shadow-lg"
-              onClick={() => setShowPublicEvents(true)}
-            >
-              Explore Events
-            </Button>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full h-14 sm:h-16 text-base sm:text-lg font-semibold rounded-full"
-              onClick={handleJoinCommunity}
-              disabled={status === 'loading'}
-            >
-              {status === 'loading' ? 'Connecting...' : 'Join the Community'}
-            </Button>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="text-center text-xs sm:text-sm text-muted-foreground mt-8"
-      >
-        <p>Fostering collaboration, creativity, and growth in Milwaukee tech</p>
-      </motion.div>
-
-      {/* Event Check-In Drawer - Works for non-authenticated users */}
+      {/* Drawers available to guests */}
       <EventCheckInDrawer
         isOpen={showEventCheckInDrawer}
         onClose={handleCloseEventCheckIn}
         eventId={selectedEventId}
       />
 
-      {/* Event Feedback Drawer - Works for non-authenticated users (anonymous) */}
       <EventFeedbackDrawer
         isOpen={showEventFeedbackDrawer}
         onClose={handleCloseEventFeedback}
         eventId={selectedEventId}
       />
 
-      {/* Event Detail Drawer - Works for non-authenticated users */}
       {selectedEventDetail && (
         <EventDetailDrawer
           event={selectedEventDetail}
@@ -1212,7 +1022,7 @@ function App() {
           onViewProfile={() => alert('Please sign in to view profiles')}
         />
       )}
-    </div>
+    </>
   )
 }
 
