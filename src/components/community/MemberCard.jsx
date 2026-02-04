@@ -18,7 +18,6 @@ function getAvatarGradient(name) {
         'from-lime-500 to-emerald-500',
     ];
 
-    // Hash the name to get consistent color
     let hash = 0;
     const str = name || 'Member';
     for (let i = 0; i < str.length; i++) {
@@ -37,42 +36,11 @@ function getInitials(name) {
     return name.slice(0, 2).toUpperCase();
 }
 
-// Avatar component with fallback
-function MemberAvatar({ member, size = 'large' }) {
-    const initials = getInitials(member.display_name || member.email?.split('@')[0]);
-    const gradient = getAvatarGradient(member.display_name || member.email);
-
-    const sizeClasses = {
-        large: 'text-5xl md:text-6xl',
-        medium: 'text-2xl',
-        small: 'text-lg'
-    };
-
-    if (member.avatar_url) {
-        return (
-            <img
-                src={member.avatar_url}
-                alt={member.display_name || 'Member'}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                    // On error, replace with gradient fallback
-                    const parent = e.target.parentElement;
-                    e.target.style.display = 'none';
-                    const fallback = parent.querySelector('.avatar-fallback');
-                    if (fallback) fallback.style.display = 'flex';
-                }}
-            />
-        );
-    }
-
-    return (
-        <div className={`avatar-fallback w-full h-full flex items-center justify-center bg-gradient-to-br ${gradient}`}>
-            <span className={`font-bold text-white ${sizeClasses[size]} tracking-tight select-none`}
-                style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                {initials}
-            </span>
-        </div>
-    );
+// Navigate to profile
+function navigateToProfile(walletHash) {
+    if (!walletHash) return;
+    window.history.pushState({}, '', `/profile/${walletHash}`);
+    window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
 export function MemberCard({ member, viewMode = 'grid', aiSearchMode = false }) {
@@ -80,10 +48,19 @@ export function MemberCard({ member, viewMode = 'grid', aiSearchMode = false }) 
     const gradient = getAvatarGradient(member.display_name || member.email);
     const initials = getInitials(member.display_name || member.email?.split('@')[0]);
 
+    const handleCardClick = () => {
+        navigateToProfile(member.wallet_hash);
+    };
+
+    const handleLinkClick = (e) => {
+        e.stopPropagation(); // Prevent card click
+    };
+
     if (viewMode === 'grid') {
         return (
             <motion.div
-                className="group flex flex-col h-full bg-card border border-border/50 rounded-2xl overflow-hidden hover:border-border transition-all duration-300 hover:shadow-lg"
+                onClick={handleCardClick}
+                className="group flex flex-col h-full bg-card border border-border/50 rounded-2xl overflow-hidden hover:border-border transition-all duration-300 hover:shadow-lg cursor-pointer"
                 whileHover={{ y: -2 }}
                 transition={{ duration: 0.2 }}
             >
@@ -124,7 +101,7 @@ export function MemberCard({ member, viewMode = 'grid', aiSearchMode = false }) 
                 <div className="p-5 space-y-3 flex-1 flex flex-col">
                     {/* Name & Tagline */}
                     <div>
-                        <h3 className="font-semibold text-lg tracking-tight">
+                        <h3 className="font-semibold text-lg tracking-tight group-hover:text-primary transition-colors">
                             {member.display_name || member.email?.split('@')[0] || 'Member'}
                         </h3>
                         {member.tagline && (
@@ -172,30 +149,39 @@ export function MemberCard({ member, viewMode = 'grid', aiSearchMode = false }) 
                         <div className="pt-3 border-t border-border/30 flex flex-wrap gap-1.5">
                             {member.github_username && (
                                 <a href={`https://github.com/${member.github_username}`} target="_blank" rel="noopener noreferrer"
+                                    onClick={handleLinkClick}
                                     className="text-xs px-2.5 py-1 rounded-full bg-foreground/5 hover:bg-foreground/10 transition-colors">
                                     GitHub
                                 </a>
                             )}
                             {member.linkedin_url && (
                                 <a href={member.linkedin_url} target="_blank" rel="noopener noreferrer"
+                                    onClick={handleLinkClick}
                                     className="text-xs px-2.5 py-1 rounded-full bg-foreground/5 hover:bg-foreground/10 transition-colors">
                                     LinkedIn
                                 </a>
                             )}
                             {member.twitter_username && (
                                 <a href={`https://twitter.com/${member.twitter_username}`} target="_blank" rel="noopener noreferrer"
+                                    onClick={handleLinkClick}
                                     className="text-xs px-2.5 py-1 rounded-full bg-foreground/5 hover:bg-foreground/10 transition-colors">
                                     Twitter
                                 </a>
                             )}
                             {member.website && (
                                 <a href={member.website} target="_blank" rel="noopener noreferrer"
+                                    onClick={handleLinkClick}
                                     className="text-xs px-2.5 py-1 rounded-full bg-foreground/5 hover:bg-foreground/10 transition-colors">
                                     Website
                                 </a>
                             )}
                         </div>
                     )}
+
+                    {/* View Profile hint */}
+                    <div className="pt-2 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity text-center">
+                        Click to view full profile →
+                    </div>
                 </div>
             </motion.div>
         );
@@ -204,7 +190,8 @@ export function MemberCard({ member, viewMode = 'grid', aiSearchMode = false }) 
     // List View
     return (
         <motion.div
-            className="group flex items-start gap-4 bg-card border border-border/50 p-4 rounded-2xl hover:border-border transition-all duration-300 hover:shadow-md"
+            onClick={handleCardClick}
+            className="group flex items-start gap-4 bg-card border border-border/50 p-4 rounded-2xl hover:border-border transition-all duration-300 hover:shadow-md cursor-pointer"
             whileHover={{ y: -1 }}
             transition={{ duration: 0.2 }}
         >
@@ -238,7 +225,7 @@ export function MemberCard({ member, viewMode = 'grid', aiSearchMode = false }) 
             {/* Info */}
             <div className="flex-1 min-w-0 space-y-1.5">
                 <div>
-                    <h3 className="font-semibold text-base tracking-tight">
+                    <h3 className="font-semibold text-base tracking-tight group-hover:text-primary transition-colors">
                         {member.display_name || member.email?.split('@')[0] || 'Member'}
                     </h3>
                     {member.tagline && (
@@ -271,24 +258,32 @@ export function MemberCard({ member, viewMode = 'grid', aiSearchMode = false }) 
                     <div className="flex flex-wrap gap-1.5 pt-2">
                         {member.github_username && (
                             <a href={`https://github.com/${member.github_username}`} target="_blank" rel="noopener noreferrer"
+                                onClick={handleLinkClick}
                                 className="text-xs px-2 py-0.5 rounded-full bg-foreground/5 hover:bg-foreground/10 transition-colors">
                                 GitHub
                             </a>
                         )}
                         {member.linkedin_url && (
                             <a href={member.linkedin_url} target="_blank" rel="noopener noreferrer"
+                                onClick={handleLinkClick}
                                 className="text-xs px-2 py-0.5 rounded-full bg-foreground/5 hover:bg-foreground/10 transition-colors">
                                 LinkedIn
                             </a>
                         )}
                         {member.twitter_username && (
                             <a href={`https://twitter.com/${member.twitter_username}`} target="_blank" rel="noopener noreferrer"
+                                onClick={handleLinkClick}
                                 className="text-xs px-2 py-0.5 rounded-full bg-foreground/5 hover:bg-foreground/10 transition-colors">
                                 Twitter
                             </a>
                         )}
                     </div>
                 )}
+            </div>
+
+            {/* Arrow indicator */}
+            <div className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity self-center">
+                →
             </div>
         </motion.div>
     );
