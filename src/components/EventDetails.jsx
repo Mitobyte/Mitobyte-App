@@ -91,9 +91,66 @@ export default function EventDetails({ event, onClose, user, walletAddress, rsvp
               </h1>
 
               {/* Event Description */}
-              <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-                {event.description}
-              </p>
+              {/* Event Description */}
+              <div className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                {event.description?.split('\n').map((paragraph, idx) => {
+                  // Handle different markdown elements
+                  if (paragraph.startsWith('**') && paragraph.endsWith('**')) {
+                    // Bold headers
+                    return (
+                      <h3 key={idx} className="text-xl font-semibold mt-6 mb-3 text-foreground">
+                        {paragraph.replace(/\*\*/g, '')}
+                      </h3>
+                    );
+                  } else if (paragraph.startsWith('**') && paragraph.includes(':**')) {
+                    // Bold labels with content
+                    const parts = paragraph.split(':**');
+                    return (
+                      <p key={idx} className="mb-3">
+                        <strong className="text-foreground">{parts[0].replace(/\*\*/g, '')}: </strong>
+                        {parts[1]}
+                      </p>
+                    );
+                  } else if (paragraph.startsWith('- ')) {
+                    // List items
+                    return (
+                      <li key={idx} className="ml-4 mb-2 list-disc">
+                        {paragraph.substring(2).replace(/\*\*/g, '')}
+                      </li>
+                    );
+                  } else if (paragraph.match(/^\d+\./)) {
+                    // Numbered lists
+                    return (
+                      <li key={idx} className="ml-4 mb-2 list-decimal">
+                        {paragraph.replace(/^\d+\.\s/, '').replace(/\*\*/g, '')}
+                      </li>
+                    );
+                  } else if (paragraph.trim() === '') {
+                    // Empty lines
+                    return <div key={idx} className="h-4" />;
+                  } else {
+                    // Regular paragraphs with inline formatting
+                    const formatted = paragraph
+                      .split(/(\*\*.*?\*\*)/)
+                      .map((part, i) => {
+                        if (part.startsWith('**') && part.endsWith('**')) {
+                          return (
+                            <strong key={i} className="text-foreground">
+                              {part.replace(/\*\*/g, '')}
+                            </strong>
+                          );
+                        }
+                        return part;
+                      });
+
+                    return (
+                      <p key={idx} className="mb-3">
+                        {formatted}
+                      </p>
+                    );
+                  }
+                })}
+              </div>
 
               {/* Event Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -172,11 +229,10 @@ export default function EventDetails({ event, onClose, user, walletAddress, rsvp
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => onRsvp('going')}
-                        className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${
-                          rsvpStatus === 'going'
+                        className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${rsvpStatus === 'going'
                             ? 'border-green-500 bg-green-500/10'
                             : 'border-border hover:border-green-500/50'
-                        }`}
+                          }`}
                       >
                         <span className="text-3xl mb-2">✅</span>
                         <span className="text-sm font-medium">Going</span>
@@ -186,11 +242,10 @@ export default function EventDetails({ event, onClose, user, walletAddress, rsvp
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => onRsvp('maybe')}
-                        className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${
-                          rsvpStatus === 'maybe'
+                        className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${rsvpStatus === 'maybe'
                             ? 'border-yellow-500 bg-yellow-500/10'
                             : 'border-border hover:border-yellow-500/50'
-                        }`}
+                          }`}
                       >
                         <span className="text-3xl mb-2">🤔</span>
                         <span className="text-sm font-medium">Maybe</span>
@@ -200,11 +255,10 @@ export default function EventDetails({ event, onClose, user, walletAddress, rsvp
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => onRsvp('no')}
-                        className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${
-                          rsvpStatus === 'no'
+                        className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${rsvpStatus === 'no'
                             ? 'border-red-500 bg-red-500/10'
                             : 'border-border hover:border-red-500/50'
-                        }`}
+                          }`}
                       >
                         <span className="text-3xl mb-2">❌</span>
                         <span className="text-sm font-medium">No</span>

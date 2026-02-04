@@ -1390,13 +1390,38 @@ function EditEventModal({ event, user, onClose, onSuccess }) {
     location: event?.location || '',
     capacity: event?.capacity || '',
     eventType: event?.event_type || 'hackathon',
-    thumbnailUrl: event?.thumbnail_url || ''
+    thumbnailUrl: event?.thumbnail_url || '',
+    checkInFormId: event?.check_in_form_id || '',
+    feedbackFormId: event?.feedback_form_id || ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState(null)
   const [updateSeries, setUpdateSeries] = useState(false)
+  const [formTemplates, setFormTemplates] = useState([])
+  const [loadingTemplates, setLoadingTemplates] = useState(true)
 
   const isPartOfSeries = event && (event.parent_event_id || event.is_recurring)
+
+  // Fetch form templates on mount
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const response = await fetch('/api/form-templates-manager?includeCustom=true')
+        const data = await response.json()
+        if (data.success && data.templates) {
+          setFormTemplates(data.templates)
+        }
+      } catch (err) {
+        console.error('Failed to load form templates:', err)
+      } finally {
+        setLoadingTemplates(false)
+      }
+    }
+    fetchTemplates()
+  }, [])
+
+  const checkInTemplates = formTemplates.filter(t => t.form_type === 'check-in')
+  const feedbackTemplates = formTemplates.filter(t => t.form_type === 'feedback')
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -1420,7 +1445,9 @@ function EditEventModal({ event, user, onClose, onSuccess }) {
         time: formData.time,
         location: formData.location,
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
-        thumbnailUrl: formData.thumbnailUrl || null
+        thumbnailUrl: formData.thumbnailUrl || null,
+        checkInFormId: formData.checkInFormId ? parseInt(formData.checkInFormId) : null,
+        feedbackFormId: formData.feedbackFormId ? parseInt(formData.feedbackFormId) : null
       }
 
       const result = await updateEvent(event.id, eventData, updateSeries)
@@ -1586,6 +1613,68 @@ function EditEventModal({ event, user, onClose, onSuccess }) {
               onChange={handleChange}
               placeholder="https://example.com/image.jpg"
             />
+          </div>
+
+          {/* Form Assignment Section */}
+          <div className="border-t border-border pt-4 mt-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <span>📋</span> Form Assignment
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="checkInFormId" className="block text-sm font-medium mb-2">
+                  Check-in Form
+                </label>
+                <select
+                  id="checkInFormId"
+                  name="checkInFormId"
+                  value={formData.checkInFormId}
+                  onChange={handleChange}
+                  disabled={loadingTemplates}
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="">No check-in form</option>
+                  {checkInTemplates.map(template => (
+                    <option key={template.id} value={template.id}>
+                      {template.name} {template.is_system ? '(System)' : ''}
+                    </option>
+                  ))}
+                </select>
+                {formData.checkInFormId && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ✓ Check-in QR code will be available
+                  </p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="feedbackFormId" className="block text-sm font-medium mb-2">
+                  Feedback Form
+                </label>
+                <select
+                  id="feedbackFormId"
+                  name="feedbackFormId"
+                  value={formData.feedbackFormId}
+                  onChange={handleChange}
+                  disabled={loadingTemplates}
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="">No feedback form</option>
+                  {feedbackTemplates.map(template => (
+                    <option key={template.id} value={template.id}>
+                      {template.name} {template.is_system ? '(System)' : ''}
+                    </option>
+                  ))}
+                </select>
+                {formData.feedbackFormId && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ✓ Feedback QR code will be available
+                  </p>
+                )}
+              </div>
+            </div>
+            {loadingTemplates && (
+              <p className="text-xs text-muted-foreground mt-2">Loading form templates...</p>
+            )}
           </div>
 
           {error && (

@@ -145,9 +145,15 @@ export function EnhancedEventCard({
         </h3>
 
         {/* Description */}
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-          {event.description}
-        </p>
+        <div className="text-sm text-muted-foreground mb-4 line-clamp-2">
+          {event.description ? event.description.split(/(\*\*.*?\*\*)/).map((part, index) => (
+            part.startsWith('**') && part.endsWith('**') ? (
+              <strong key={index} className="text-foreground">{part.slice(2, -2)}</strong>
+            ) : (
+              <span key={index}>{part.replace(/^[#\-]\s/gm, '')}</span>
+            )
+          )) : null}
+        </div>
 
         {/* Date, Time, Location */}
         <div className="space-y-2 mb-4">

@@ -97,3 +97,20 @@ export async function getEventStats(eventId) {
 
   return response.json();
 }
+
+/**
+ * Get public list of attendees for an event
+ * @param {number} eventId 
+ * @returns {Promise<Object>} List of attendees
+ */
+export async function getEventAttendees(eventId) {
+  const params = new URLSearchParams({ eventId });
+  const response = await fetch(`${API_BASE_URL}/api/rsvps?${params}`);
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch attendees');
+  }
+
+  return response.json();
+}

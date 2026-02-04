@@ -31,7 +31,7 @@ export default function EventsList({ user, walletAddress }) {
 
   useEffect(() => {
     fetchEvents()
-  }, [filter])
+  }, [filter, viewMode])
 
   // Sync Meetup events every 5 seconds
   useEffect(() => {
@@ -68,7 +68,8 @@ export default function EventsList({ user, walletAddress }) {
       setLoading(true)
       setError(null)
 
-      const options = filter === 'upcoming' ? { upcoming: true } : {}
+      // In calendar mode, always fetch all events to allow navigation history
+      const options = (viewMode === 'calendar' || filter === 'all') ? {} : { upcoming: true }
       const data = await getAllEvents(options)
       setEvents(data.events || [])
     } catch (err) {
@@ -249,46 +250,52 @@ export default function EventsList({ user, walletAddress }) {
         {/* Filter and View Buttons */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex gap-2">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-4 h-9 rounded-full text-sm font-medium transition-colors ${filter === 'all'
-                  ? 'bg-foreground text-background'
-                  : 'border border-border/40 hover:bg-foreground/5'
-                }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setFilter('upcoming')}
-              className={`px-4 h-9 rounded-full text-sm font-medium transition-colors ${filter === 'upcoming'
-                  ? 'bg-foreground text-background'
-                  : 'border border-border/40 hover:bg-foreground/5'
-                }`}
-            >
-              Upcoming
-            </button>
+            {viewMode === 'list' && (
+              <>
+                <button
+                  onClick={() => setFilter('all')}
+                  className={`px-4 h-9 rounded-full text-sm font-medium transition-colors ${filter === 'all'
+                    ? 'bg-foreground text-background'
+                    : 'border border-border/40 hover:bg-foreground/5'
+                    }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setFilter('upcoming')}
+                  className={`px-4 h-9 rounded-full text-sm font-medium transition-colors ${filter === 'upcoming'
+                    ? 'bg-foreground text-background'
+                    : 'border border-border/40 hover:bg-foreground/5'
+                    }`}
+                >
+                  Upcoming
+                </button>
+              </>
+            )}
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode('list')}
-              className={`w-9 h-9 rounded-full transition-colors flex items-center justify-center ${viewMode === 'list'
-                  ? 'bg-foreground/10'
-                  : 'hover:bg-foreground/5'
+              className={`px-3 h-9 rounded-full transition-colors flex items-center justify-center gap-1.5 ${viewMode === 'list'
+                ? 'bg-foreground/10'
+                : 'hover:bg-foreground/5'
                 }`}
               title="List View"
             >
-              📋
+              <span>📋</span>
+              <span className="text-sm font-medium">List</span>
             </button>
             <button
               onClick={() => setViewMode('calendar')}
-              className={`w-9 h-9 rounded-full transition-colors flex items-center justify-center ${viewMode === 'calendar'
-                  ? 'bg-foreground/10'
-                  : 'hover:bg-foreground/5'
+              className={`px-3 h-9 rounded-full transition-colors flex items-center justify-center gap-1.5 ${viewMode === 'calendar'
+                ? 'bg-foreground/10'
+                : 'hover:bg-foreground/5'
                 }`}
               title="Calendar View"
             >
-              📅
+              <span>📅</span>
+              <span className="text-sm font-medium">Calendar</span>
             </button>
           </div>
         </div>
@@ -423,9 +430,15 @@ export default function EventsList({ user, walletAddress }) {
                     </h3>
 
                     {/* Event Description */}
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                      {event.description}
-                    </p>
+                    <div className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                      {event.description ? event.description.split(/(\*\*.*?\*\*)/).map((part, index) => (
+                        part.startsWith('**') && part.endsWith('**') ? (
+                          <strong key={index} className="text-foreground">{part.slice(2, -2)}</strong>
+                        ) : (
+                          <span key={index}>{part.replace(/^[#\-]\s/gm, '')}</span>
+                        )
+                      )) : null}
+                    </div>
 
                     {/* Event Details */}
                     <div className="space-y-1.5 text-sm mb-4">
@@ -465,8 +478,8 @@ export default function EventsList({ user, walletAddress }) {
                               handleRsvp(event.id, 'going')
                             }}
                             className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-colors ${rsvpStatus[event.id] === 'going'
-                                ? 'border-foreground bg-foreground/10'
-                                : 'border-border/40 hover:bg-foreground/5'
+                              ? 'border-foreground bg-foreground/10'
+                              : 'border-border/40 hover:bg-foreground/5'
                               }`}
                           >
                             <span className="text-lg mb-0.5">✅</span>
@@ -479,8 +492,8 @@ export default function EventsList({ user, walletAddress }) {
                               handleRsvp(event.id, 'maybe')
                             }}
                             className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-colors ${rsvpStatus[event.id] === 'maybe'
-                                ? 'border-foreground bg-foreground/10'
-                                : 'border-border/40 hover:bg-foreground/5'
+                              ? 'border-foreground bg-foreground/10'
+                              : 'border-border/40 hover:bg-foreground/5'
                               }`}
                           >
                             <span className="text-lg mb-0.5">🤔</span>
@@ -493,8 +506,8 @@ export default function EventsList({ user, walletAddress }) {
                               handleRsvp(event.id, 'no')
                             }}
                             className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-colors ${rsvpStatus[event.id] === 'no'
-                                ? 'border-foreground bg-foreground/10'
-                                : 'border-border/40 hover:bg-foreground/5'
+                              ? 'border-foreground bg-foreground/10'
+                              : 'border-border/40 hover:bg-foreground/5'
                               }`}
                           >
                             <span className="text-lg mb-0.5">❌</span>

@@ -25,6 +25,7 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
   // Unified filter options - combines view mode and event types
   const filterOptions = [
     { value: 'all', label: 'All Events', icon: '🎉', type: 'view' },
+    { value: 'calendar', label: 'Calendar View', icon: '📅', type: 'view' },
     ...(walletAddress ? [{ value: 'my-events', label: 'My Events', icon: '✅', type: 'view', badge: Object.values(rsvpStatus).filter(s => s === 'going').length }] : []),
     { value: 'meetup', label: 'Meetups', icon: '🤝', type: 'event' },
     { value: 'workshop', label: 'Workshops', icon: '🎓', type: 'event' },
@@ -160,6 +161,9 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
     setSearchTerm('');
   };
 
+  // Calendar state
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
   // Filter events based on unified filter
   const filteredEvents = useMemo(() => {
     // If AI search is active, use AI results
@@ -172,7 +176,7 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
       }
 
       // Apply event type filter to AI results
-      if (selectedFilter !== 'all' && selectedFilter !== 'my-events') {
+      if (selectedFilter !== 'all' && selectedFilter !== 'calendar' && selectedFilter !== 'my-events') {
         filtered = filtered.filter(event => event.event_type === selectedFilter);
       }
 
@@ -181,6 +185,11 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
 
     // Regular filtering
     let filtered = [...events];
+
+    // Calendar view needs all events to show properly in monthly grid
+    if (selectedFilter === 'calendar') {
+      return filtered;
+    }
 
     // Apply My Events filter
     if (selectedFilter === 'my-events') {
@@ -205,6 +214,38 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
     return filtered;
   }, [events, searchTerm, selectedFilter, rsvpStatus, aiSearchMode, aiSearchResults]);
 
+  // Calendar Logic
+  const calendarData = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startingDayOfWeek = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+    const weeks = [];
+    let week = new Array(7).fill(null);
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayOfWeek = (startingDayOfWeek + day - 1) % 7;
+      week[dayOfWeek] = day;
+      if (dayOfWeek === 6 || day === daysInMonth) {
+        weeks.push([...week]);
+        week = new Array(7).fill(null);
+      }
+    }
+    return { year, month, weeks, daysInMonth };
+  }, [currentMonth]);
+
+  const getEventsForDate = (day) => {
+    if (!day) return [];
+    const dateStr = `${calendarData.year}-${String(calendarData.month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return events.filter(event => event.date === dateStr);
+  };
+
+  const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
       {/* Hero Banner */}
@@ -222,11 +263,10 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
             <button
               key={filter.value}
               onClick={() => setSelectedFilter(filter.value)}
-              className={`flex items-center justify-center px-4 sm:px-5 py-2.5 sm:py-3 rounded-full text-xs sm:text-sm font-medium transition-all touch-manipulation active:scale-95 ${
-                selectedFilter === filter.value
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'border-2 border-border hover:bg-foreground/5 hover:border-foreground/20'
-              }`}
+              className={`flex items-center justify-center px-4 sm:px-5 py-2.5 sm:py-3 rounded-full text-xs sm:text-sm font-medium transition-all touch-manipulation active:scale-95 ${selectedFilter === filter.value
+                ? 'bg-primary text-primary-foreground shadow-md'
+                : 'border-2 border-border hover:bg-foreground/5 hover:border-foreground/20'
+                }`}
             >
               <span className="text-base sm:text-lg">{filter.icon}</span>
               <span className="ml-1.5 sm:ml-2 whitespace-nowrap">{filter.label}</span>
@@ -239,6 +279,39 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
           ))}
         </div>
       </div>
+
+      {/* Hackreation Hub Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-6 sm:mb-8"
+      >
+        <button
+          onClick={() => {
+            window.history.pushState({}, '', '/hack');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          className="w-full p-4 sm:p-5 rounded-xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 border border-purple-500/20 hover:border-purple-500/40 transition-all group flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-purple-500/20 flex items-center justify-center text-2xl sm:text-3xl">
+              💻
+            </div>
+            <div className="text-left">
+              <div className="font-bold text-base sm:text-lg group-hover:text-primary transition-colors">
+                Hackreation Hub
+              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                Join hackathons, submit projects, and compete for prizes
+              </div>
+            </div>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-primary">
+            <span>Explore</span>
+            <span className="group-hover:translate-x-1 transition-transform">→</span>
+          </div>
+        </button>
+      </motion.div>
 
       {/* Filters */}
       <div id="events-list" className="space-y-5 sm:space-y-6 mb-8 sm:mb-10">
@@ -320,6 +393,85 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
             <p className="text-sm text-muted-foreground">Loading events...</p>
           </div>
         </div>
+      ) : selectedFilter === 'calendar' ? (
+        /* Calendar View rendering */
+        <div className="animate-in fade-in duration-500">
+          {/* Month Navigation */}
+          <div className="flex items-center justify-between mb-6 bg-card border border-border rounded-xl p-3 shadow-sm">
+            <button
+              onClick={prevMonth}
+              className="px-4 py-2 hover:bg-muted rounded-lg transition-colors"
+            >
+              ← Prev
+            </button>
+            <h3 className="text-lg font-semibold">
+              {monthNames[calendarData.month]} {calendarData.year}
+            </h3>
+            <button
+              onClick={nextMonth}
+              className="px-4 py-2 hover:bg-muted rounded-lg transition-colors"
+            >
+              Next →
+            </button>
+          </div>
+
+          <div className="border border-border rounded-xl overflow-hidden shadow-sm bg-card">
+            <div className="grid grid-cols-7 bg-muted/50 border-b border-border">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="p-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {day}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 bg-background">
+              {calendarData.weeks.map((week, weekIndex) => (
+                week.map((day, dayIndex) => {
+                  const dayEvents = getEventsForDate(day);
+                  const isToday = day &&
+                    new Date().getDate() === day &&
+                    new Date().getMonth() === calendarData.month &&
+                    new Date().getFullYear() === calendarData.year;
+
+                  return (
+                    <div
+                      key={`${weekIndex}-${dayIndex}`}
+                      className={`min-h-[120px] p-2 border-r border-b border-border/50 transition-colors ${!day ? 'bg-muted/10' : 'hover:bg-muted/20'
+                        } ${isToday ? 'bg-primary/5 ring-1 ring-inset ring-primary/20' : ''}`}
+                    >
+                      {day && (
+                        <>
+                          <div className={`text-xs font-medium mb-2 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
+                            {day}
+                          </div>
+                          <div className="space-y-1.5">
+                            {dayEvents.map(event => {
+                              const icon = filterOptions.find(opt => opt.value === event.event_type)?.icon || '📅';
+                              return (
+                                <button
+                                  key={event.id}
+                                  onClick={() => setSelectedEvent(event)}
+                                  className="w-full text-left text-xs p-1.5 rounded-md bg-secondary/50 hover:bg-secondary border border-transparent hover:border-border transition-all group"
+                                >
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="shrink-0">{icon}</span>
+                                    <span className="truncate font-medium group-hover:text-primary transition-colors">{event.title}</span>
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground pl-5 mt-0.5">
+                                    {event.time && new Date(`2000-01-01T${event.time}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })
+              ))}
+            </div>
+          </div>
+        </div>
       ) : filteredEvents.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
           {filteredEvents.map((event, index) => (
@@ -377,8 +529,8 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
             {selectedFilter === 'my-events'
               ? "You haven't RSVP'd to any events yet."
               : searchTerm || selectedFilter !== 'all'
-              ? 'Try adjusting your search or filters.'
-              : 'No upcoming events scheduled.'}
+                ? 'Try adjusting your search or filters.'
+                : 'No upcoming events scheduled.'}
           </p>
           {!isAdmin && (
             <button

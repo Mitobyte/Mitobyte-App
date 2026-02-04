@@ -127,15 +127,35 @@ export async function onRequestPost(context) {
                                 }
 
                                 // This matches the structure seen in your provided curl output
-                                // Priority: 
-                                // 1. featuredEventPhoto.highResUrl
-                                // 2. featuredEventPhoto.baseUrl + id
-                                // 3. image object/string (from other schemas)
                                 const eventImage =
                                     (photoObj && photoObj.highResUrl) ? photoObj.highResUrl :
                                         (photoObj && photoObj.baseUrl && photoObj.id) ? `${photoObj.baseUrl}${photoObj.id}.jpeg` :
                                             (obj.image && typeof obj.image === 'string') ? obj.image :
                                                 (obj.image && obj.image.url) ? obj.image.url : null;
+
+                                // Resolve venue reference if needed
+                                let venueObj = obj.venue;
+                                if (venueObj && venueObj.__ref) {
+                                    venueObj = resolveRef(venueObj.__ref);
+                                }
+
+                                // Construct location object matching the Schema.org Place structure expected by the main loop
+                                let locationObj = null;
+                                if (venueObj) {
+                                    locationObj = {
+                                        '@type': 'Place',
+                                        name: venueObj.name,
+                                        address: {
+                                            '@type': 'PostalAddress',
+                                            streetAddress: venueObj.address,
+                                            addressLocality: venueObj.city,
+                                            addressRegion: venueObj.state,
+                                            addressCountry: venueObj.country
+                                        }
+                                    };
+                                } else if (obj.eventType === 'ONLINE') {
+                                    locationObj = { '@type': 'VirtualLocation' };
+                                }
 
                                 eventsFound.push({
                                     '@type': 'Event',
@@ -143,16 +163,7 @@ export async function onRequestPost(context) {
                                     description: obj.description,
                                     startDate: obj.dateTime,
                                     url: obj.eventUrl,
-                                    location: obj.venue ? {
-                                        '@type': 'Place',
-                                        name: obj.venue.name,
-                                        address: {
-                                            streetAddress: obj.venue.address,
-                                            addressLocality: obj.venue.city,
-                                            addressRegion: obj.venue.state,
-                                            addressCountry: obj.venue.country
-                                        }
-                                    } : (obj.eventType === 'ONLINE' ? { '@type': 'VirtualLocation' } : null),
+                                    location: locationObj,
                                     image: eventImage
                                 });
                             } else {

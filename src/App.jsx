@@ -25,6 +25,9 @@ import SponsorBanner from './components/SponsorBanner'
 import { getOrCreateUser } from './services/userApi'
 import { isProfileComplete } from './services/profileApi'
 import { login as jwtLogin, logout as jwtLogout } from './services/authService'
+import { HackLandingPage } from './components/events/HackLandingPage'
+import { HackEventDetailPage } from './components/events/HackEventDetailPage'
+import { HackreationAdmin } from './components/events/HackreationAdmin'
 import mitobyteLogoLarge from './mitobyte-c-large.png'
 
 function App() {
@@ -490,7 +493,7 @@ function App() {
         }
         setCurrentPath('/')
         setSearchParams(new URLSearchParams(''))
-      } catch {}
+      } catch { }
     }
     window.addEventListener('mitobyte:close-all-drawers', closeAll)
     return () => window.removeEventListener('mitobyte:close-all-drawers', closeAll)
@@ -688,6 +691,58 @@ function App() {
         isAuthenticated={isAuthenticated}
         onLogin={handleJoinCommunity}
         currentUserWallet={currentUserWallet}
+      />
+    )
+  }
+
+  // ADMIN: Hackreation Admin Page
+  if (currentPath === '/hack/admin') {
+    const walletAddress = wallet?.address || (user?.email ? `email:${user.email}` : null)
+
+    return (
+      <HackreationAdmin
+        user={user}
+        dbUser={dbUser}
+        walletAddress={walletAddress}
+        onClose={() => {
+          window.history.pushState({}, '', '/hack')
+          window.dispatchEvent(new PopStateEvent('popstate'))
+        }}
+      />
+    )
+  }
+
+  // PUBLIC: Hack Event Detail Page
+  if (currentPath.startsWith('/hack/event/')) {
+    const eventId = currentPath.split('/hack/event/')[1]
+    const walletAddress = wallet?.address || (user?.email ? `email:${user.email}` : null)
+
+    return (
+      <HackEventDetailPage
+        eventId={eventId}
+        user={user}
+        walletAddress={walletAddress}
+        onBack={() => {
+          window.history.pushState({}, '', '/hack')
+          window.dispatchEvent(new PopStateEvent('popstate'))
+        }}
+        onLogin={handleJoinCommunity}
+        isAuthenticated={isAuthenticated}
+      />
+    )
+  }
+
+  // PUBLIC: Hack Hub page - accessible without login
+  if (currentPath === '/hack') {
+    const walletAddress = wallet?.address || (user?.email ? `email:${user.email}` : null)
+    console.log('📍 RENDERING: Hack Hub (Public Access)')
+    return (
+      <HackLandingPage
+        user={user}
+        dbUser={dbUser}
+        walletAddress={walletAddress}
+        isAuthenticated={isAuthenticated}
+        onLogin={handleJoinCommunity}
       />
     )
   }
@@ -1059,11 +1114,10 @@ function App() {
                 <button
                   key={index}
                   onClick={() => setCurrentIndex(index)}
-                  className={`h-2 rounded-full transition-all ${
-                    index === currentIndex
-                      ? 'w-8 bg-primary'
-                      : 'w-2 bg-muted-foreground/30'
-                  }`}
+                  className={`h-2 rounded-full transition-all ${index === currentIndex
+                    ? 'w-8 bg-primary'
+                    : 'w-2 bg-muted-foreground/30'
+                    }`}
                   aria-label={`Go to slide ${index + 1}`}
                 />
               ))}

@@ -147,6 +147,24 @@ export async function onRequestGet(context) {
       }, 400);
     }
 
+    if (eventId && !walletAddress) {
+      // Get all attendees for an event (Public Info)
+      const { results } = await context.env.DB.prepare(`
+        SELECT 
+          users.display_name, 
+          users.email,
+          user_profiles.tagline as role,
+          user_profiles.skills,
+          user_profiles.avatar_url
+        FROM rsvps
+        JOIN users ON rsvps.user_wallet_hash = users.wallet_hash
+        LEFT JOIN user_profiles ON users.id = user_profiles.user_id
+        WHERE rsvps.event_id = ? AND rsvps.rsvp_status = 'going'
+      `).bind(eventId).all();
+
+      return jsonResponse({ attendees: results });
+    }
+
     if (eventId && walletAddress) {
       // Get specific RSVP
       const walletHash = await hashWallet(walletAddress);
