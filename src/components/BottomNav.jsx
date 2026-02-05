@@ -4,7 +4,6 @@ import Z_INDEX from '../lib/z-index'
 const BottomNav = ({ activeTab, onTabChange }) => {
   const tabs = [
     { id: 'events', label: 'Events', icon: '📅' },
-    { id: 'showcase', label: 'Feed', icon: '📰' },
     { id: 'directory', label: 'Directory', icon: '👥' },
     { id: 'profile', label: 'Profile', icon: '👤' }
   ]

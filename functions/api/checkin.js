@@ -171,15 +171,15 @@ export async function onRequestPost(context) {
         event.id,
         hashedWalletAddress,
         deviceInfo || null,
-        requiresStandUp ? processedResponses.workingOn : null,
-        requiresStandUp ? processedResponses.canHelpWith : null,
-        requiresStandUp ? processedResponses.needHelpWith : null,
-        requiresStandUp ? (rawWorkingOn || workingOn) : null,
-        requiresStandUp ? (rawCanHelpWith || canHelpWith) : null,
-        requiresStandUp ? (rawNeedHelpWith || needHelpWith) : null,
-        requiresStandUp ? 1 : null,
-        requiresStandUp ? confidence : null,
-        requiresStandUp && contentWarnings ? JSON.stringify(contentWarnings) : null
+        (requiresStandUp && processedResponses) ? processedResponses.workingOn : null,
+        (requiresStandUp && processedResponses) ? processedResponses.canHelpWith : null,
+        (requiresStandUp && processedResponses) ? processedResponses.needHelpWith : null,
+        requiresStandUp ? (rawWorkingOn || workingOn || null) : null,
+        requiresStandUp ? (rawCanHelpWith || canHelpWith || null) : null,
+        requiresStandUp ? (rawNeedHelpWith || needHelpWith || null) : null,
+        (requiresStandUp && processedResponses) ? 1 : null,
+        (requiresStandUp && confidence) ? confidence : null,
+        (requiresStandUp && contentWarnings) ? JSON.stringify(contentWarnings) : null
       )
       .run();
 

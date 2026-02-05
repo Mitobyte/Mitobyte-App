@@ -233,14 +233,14 @@ const CommunityHub = ({ user, dbUser, walletAddress, onCheckIn, onLogout, onAdmi
               console.log('DEBUG: showHostButton:', showHostButton);
               return showHostButton;
             })() && (
-              <button
-                onClick={onHostClick}
-                className="hidden md:flex items-center gap-2 px-3 h-9 rounded-full hover:bg-foreground/5 transition-colors text-sm"
-              >
-                <span>🎯</span>
-                <span className="text-xs font-medium">Host</span>
-              </button>
-            )}
+                <button
+                  onClick={onHostClick}
+                  className="hidden md:flex items-center gap-2 px-3 h-9 rounded-full hover:bg-foreground/5 transition-colors text-sm"
+                >
+                  <span>🎯</span>
+                  <span className="text-xs font-medium">Host</span>
+                </button>
+              )}
             {dbUser?.is_sponsor && (
               <button
                 onClick={onSponsorClick}
@@ -330,7 +330,7 @@ const CommunityHub = ({ user, dbUser, walletAddress, onCheckIn, onLogout, onAdmi
         {/* Directory Tab */}
         {activeTab === 'directory' && (
           <div className="px-4 py-6">
-            <MemberDirectory currentUserWallet={walletAddress} />
+            <MemberDirectory currentUserWallet={walletAddress} currentUserProfile={userProfile} />
           </div>
         )}
 

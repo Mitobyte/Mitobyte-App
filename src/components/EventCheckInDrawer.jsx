@@ -20,6 +20,7 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
   // Guest check-in fields (for unauthenticated users)
   const [guestName, setGuestName] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
+  const [submittedName, setSubmittedName] = useState('') // Store name after successful check-in
 
   // Determine if user is authenticated
   const isAuthenticated = !!(wallet?.address || user?.email)
@@ -105,16 +106,34 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
   }
 
   const validateGuestFields = () => {
-    if (!guestName.trim()) {
+    // For guests, extract name and email from form template responses
+    if (!formTemplate?.questions) {
+      setError('Form template not loaded')
+      return false
+    }
+
+    // Find name field (look for question containing 'name' in label)
+    const nameQuestion = formTemplate.questions.find(q =>
+      q.label?.toLowerCase().includes('name') && q.type === 'text'
+    )
+    const guestNameValue = nameQuestion ? formResponses[nameQuestion.id]?.trim() : ''
+
+    // Find email field (look for question with email type or containing 'email' in label)
+    const emailQuestion = formTemplate.questions.find(q =>
+      q.type === 'email' || q.label?.toLowerCase().includes('email')
+    )
+    const guestEmailValue = emailQuestion ? formResponses[emailQuestion.id]?.trim() : ''
+
+    if (!guestNameValue) {
       setError('Please enter your name')
       return false
     }
-    if (!guestEmail.trim()) {
+    if (!guestEmailValue) {
       setError('Please enter your email')
       return false
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(guestEmail)) {
+    if (!emailRegex.test(guestEmailValue)) {
       setError('Please enter a valid email address')
       return false
     }
@@ -162,13 +181,23 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
           language: navigator.language
         }
 
+        // Extract name and email from form responses
+        const nameQuestion = formTemplate?.questions?.find(q =>
+          q.label?.toLowerCase().includes('name') && q.type === 'text'
+        )
+        const emailQuestion = formTemplate?.questions?.find(q =>
+          q.type === 'email' || q.label?.toLowerCase().includes('email')
+        )
+        const guestNameValue = nameQuestion ? formResponses[nameQuestion.id]?.trim() : ''
+        const guestEmailValue = emailQuestion ? formResponses[emailQuestion.id]?.trim().toLowerCase() : ''
+
         const response = await fetch('/api/public-checkin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             eventId: parseInt(eventId),
-            guestName: guestName.trim(),
-            guestEmail: guestEmail.trim().toLowerCase(),
+            guestName: guestNameValue,
+            guestEmail: guestEmailValue,
             deviceInfo: JSON.stringify(deviceInfo),
             formResponses: formTemplate ? JSON.stringify(formResponses) : null,
             formId: formTemplate?.id || null
@@ -180,6 +209,9 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
         if (!response.ok) {
           throw new Error(data.details || data.error || 'Failed to check in')
         }
+
+        // Store name for personalized success message
+        setSubmittedName(guestNameValue)
       }
 
       setSuccess(true)
@@ -217,13 +249,43 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
             className="text-center py-8"
           >
             <div className="text-6xl mb-4">✅</div>
-            <h2 className="text-2xl font-bold mb-2">Check-in Successful!</h2>
-            <p className="text-muted-foreground mb-6">
+            <h2 className="text-2xl font-bold mb-2">
+              {submittedName ? `Thank you, ${submittedName.split(' ')[0]}!` : 'Check-in Successful!'}
+            </h2>
+            <p className="text-muted-foreground mb-4">
               {isAuthenticated
                 ? `You've successfully checked in to ${event?.title}`
-                : `Welcome, ${guestName}! You're checked in to ${event?.title}`
+                : `You're checked in to ${event?.title}`
               }
             </p>
+
+            {/* Engagement CTA */}
+            <div className="bg-muted/50 rounded-xl p-4 mb-6 text-left">
+              <p className="text-sm font-medium mb-3 text-center">
+                🌟 Stay engaged with us!
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <a
+                  href="https://www.linkedin.com/company/mitobyte"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#0077B5] text-white text-sm font-medium hover:bg-[#006097] transition-colors"
+                >
+                  <span>🔗</span>
+                  LinkedIn
+                </a>
+                <a
+                  href="https://discord.gg/K3rdUdsnGz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#5865F2] text-white text-sm font-medium hover:bg-[#4752C4] transition-colors"
+                >
+                  <span>💬</span>
+                  Discord
+                </a>
+              </div>
+            </div>
+
             <Button onClick={onClose}>Close</Button>
           </motion.div>
         )}
@@ -245,47 +307,9 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Guest info fields - only show if not authenticated */}
-              {!isAuthenticated && (
-                <div className="space-y-4 pb-4 mb-4 border-b border-border">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                    <span>👤</span>
-                    <span>Your Information</span>
-                  </div>
+              {/* All form questions come from the form template - no built-in guest fields */}
 
-                  <div className="space-y-2">
-                    <label htmlFor="guestName" className="block text-sm font-medium">
-                      Full Name <span className="text-destructive">*</span>
-                    </label>
-                    <Input
-                      id="guestName"
-                      type="text"
-                      value={guestName}
-                      onChange={(e) => setGuestName(e.target.value)}
-                      placeholder="Enter your full name"
-                      required
-                      disabled={submitting}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="guestEmail" className="block text-sm font-medium">
-                      Email Address <span className="text-destructive">*</span>
-                    </label>
-                    <Input
-                      id="guestEmail"
-                      type="email"
-                      value={guestEmail}
-                      onChange={(e) => setGuestEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      required
-                      disabled={submitting}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Custom form questions */}
+              {/* Custom form questions - show all fields to all users */}
               {formTemplate?.questions?.map((question) => (
                 <div key={question.id} className="space-y-2">
                   <label className="block text-sm font-medium">

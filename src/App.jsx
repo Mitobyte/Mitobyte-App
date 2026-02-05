@@ -1002,7 +1002,6 @@ function App() {
         handleJoinCommunity={handleJoinCommunity}
         status={status}
       />
-
       {/* Drawers available to guests */}
       <EventCheckInDrawer
         isOpen={showEventCheckInDrawer}

@@ -217,28 +217,45 @@ export function EnhancedEventCard({
           </div>
         )}
 
-        {/* RSVP Button */}
-        <Button
-          onClick={(e) => {
-            e.stopPropagation();
-            onRsvp?.(rsvpStatus === 'going' ? null : 'going');
-          }}
-          variant={rsvpStatus === 'going' ? 'default' : 'outline'}
-          className="w-full rounded-full"
-          size="sm"
-        >
-          {rsvpStatus === 'going' ? (
-            <>
-              <span className="mr-2">✅</span>
-              You're Going!
-            </>
-          ) : (
-            <>
-              <span className="mr-2">🎟️</span>
-              Join Event
-            </>
-          )}
-        </Button>
+        {/* RSVP Buttons */}
+        <div className="flex gap-2">
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRsvp?.(rsvpStatus === 'going' ? null : 'going');
+            }}
+            variant={rsvpStatus === 'going' ? 'default' : 'outline'}
+            className={`flex-1 rounded-full ${rsvpStatus === 'going' ? 'bg-green-600 hover:bg-green-700' : ''}`}
+            size="sm"
+          >
+            <span className="mr-1">✅</span>
+            Going
+          </Button>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRsvp?.(rsvpStatus === 'maybe' ? null : 'maybe');
+            }}
+            variant={rsvpStatus === 'maybe' ? 'default' : 'outline'}
+            className={`flex-1 rounded-full ${rsvpStatus === 'maybe' ? 'bg-yellow-600 hover:bg-yellow-700' : ''}`}
+            size="sm"
+          >
+            <span className="mr-1">🤔</span>
+            Maybe
+          </Button>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRsvp?.(rsvpStatus === 'no' ? null : 'no');
+            }}
+            variant={rsvpStatus === 'no' ? 'default' : 'outline'}
+            className={`flex-1 rounded-full ${rsvpStatus === 'no' ? 'bg-red-600 hover:bg-red-700' : ''}`}
+            size="sm"
+          >
+            <span className="mr-1">❌</span>
+            No
+          </Button>
+        </div>
 
         {/* Additional Badges */}
         {event.is_beginner_friendly && (

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { MemberCard } from './MemberCard';
 import { DirectoryFilters } from './DirectoryFilters';
 
-export function MemberDirectory({ currentUserWallet }) {
+export function MemberDirectory({ currentUserWallet, currentUserProfile }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,6 +16,15 @@ export function MemberDirectory({ currentUserWallet }) {
   const [activeTab, setActiveTab] = useState('all'); // 'all' or 'connections'
   const [connections, setConnections] = useState([]);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
+
+  // Check if current user has a complete profile
+  const isProfileComplete = currentUserProfile &&
+    currentUserProfile.display_name &&
+    currentUserProfile.bio;
+
+  // Helper to check if a member has a complete profile
+  const hasCompleteProfile = (member) =>
+    member.display_name && member.bio;
 
   useEffect(() => {
     fetchMembers();
@@ -117,9 +126,12 @@ export function MemberDirectory({ currentUserWallet }) {
     // Get the base list based on active tab
     const baseList = activeTab === 'connections' ? connections : members;
 
+    // Filter out members with incomplete profiles first
+    const completeProfiles = baseList.filter(hasCompleteProfile);
+
     // If AI search is active, use AI results
     if (aiSearchMode && aiSearchResults.length > 0) {
-      let filtered = [...aiSearchResults];
+      let filtered = aiSearchResults.filter(hasCompleteProfile);
 
       // Apply skill filter to AI results
       if (filterSkill !== 'all') {
@@ -132,7 +144,7 @@ export function MemberDirectory({ currentUserWallet }) {
     }
 
     // Regular filtering
-    return baseList.filter(member => {
+    return completeProfiles.filter(member => {
       const matchesSearch = searchTerm === '' ||
         member.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         member.bio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -147,12 +159,31 @@ export function MemberDirectory({ currentUserWallet }) {
 
   return (
     <div className="space-y-4">
+      {/* Incomplete Profile Banner */}
+      {currentUserWallet && !isProfileComplete && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 text-sm flex items-center gap-2">
+          <span>✨</span>
+          <p className="text-foreground/90">
+            <strong>Complete your profile</strong> to appear in the Community. Add a display name and bio in your{' '}
+            <button
+              onClick={() => {
+                window.history.pushState({}, '', '/settings');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="text-amber-600 dark:text-amber-400 hover:underline font-medium"
+            >
+              Settings
+            </button>.
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <span>👥</span>
-            Who's Here?
+            Community
           </h2>
           <div className="flex gap-2">
             <button
@@ -178,8 +209,8 @@ export function MemberDirectory({ currentUserWallet }) {
             <button
               onClick={() => setActiveTab('all')}
               className={`px-4 py-2 font-medium transition-colors ${activeTab === 'all'
-                  ? 'text-primary border-b-2 border-primary'
-                  : 'text-muted-foreground hover:text-foreground'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground'
                 }`}
             >
               All Members ({members.length})
@@ -187,8 +218,8 @@ export function MemberDirectory({ currentUserWallet }) {
             <button
               onClick={() => setActiveTab('connections')}
               className={`px-4 py-2 font-medium transition-colors ${activeTab === 'connections'
-                  ? 'text-primary border-b-2 border-primary'
-                  : 'text-muted-foreground hover:text-foreground'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground'
                 }`}
             >
               My Connections ({connections.length})

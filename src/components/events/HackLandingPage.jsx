@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getAllEvents } from '../../services/eventApi';
 import { getUserRsvps, saveRsvp } from '../../services/rsvpApi';
 import { EnhancedEventCard } from './EnhancedEventCard';
@@ -7,6 +7,22 @@ import { HackProjectSubmissionForm } from './HackProjectSubmissionForm';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import mitobyteLogo from '../../mitobyte-c-large.png';
+
+// Hackreation Gallery photos
+const hackreationPhotos = [
+    '/HackreationGallery/hackreation_10_24_1.afb5eac7.jpeg',
+    '/HackreationGallery/hackreation_10_24_2.9f59ea39.jpeg',
+    '/HackreationGallery/hackreation_10_24_3.62e5c75a.jpeg',
+    '/HackreationGallery/hackreation_10_24_4.5e63429e.jpeg',
+    '/HackreationGallery/hackreation_10_24_5.e4140ba8.jpeg',
+    '/HackreationGallery/hackreation_10_24_6.8285387c.jpeg',
+    '/HackreationGallery/hackreation_10_24_7.242f5f96.jpeg',
+    '/HackreationGallery/hackreation_10_24_8.cd671ec0.jpeg',
+    '/HackreationGallery/hackreation_10_24_9.a962b832.jpeg',
+    '/HackreationGallery/hackreation_10_24_10.e3df093b.jpeg',
+    '/HackreationGallery/hackreation_10_24_11.9cb28f0f.jpeg',
+    '/HackreationGallery/hackreation_10_24_12.9d328968.jpeg',
+];
 
 export function HackLandingPage({ user, walletAddress, isAuthenticated, onLogin, dbUser }) {
     // Check admin status
@@ -21,10 +37,19 @@ export function HackLandingPage({ user, walletAddress, isAuthenticated, onLogin,
     const [selectedHackathon, setSelectedHackathon] = useState(null);
     const [showSubmissionForm, setShowSubmissionForm] = useState(false);
     const [checkedInEvents, setCheckedInEvents] = useState({});
+    const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
     useEffect(() => {
         fetchData();
     }, [walletAddress]);
+
+    // Photo gallery auto-rotation
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentPhotoIndex((prev) => (prev + 1) % hackreationPhotos.length);
+        }, 4000);
+        return () => clearInterval(interval);
+    }, []);
 
     const fetchData = async () => {
         try {
@@ -187,7 +212,58 @@ export function HackLandingPage({ user, walletAddress, isAuthenticated, onLogin,
                 </motion.div>
             </section>
 
-            {/* Login Prompt - Mobile Friendly */}
+            {/* Photo Gallery Section */}
+            <section className="px-4 pb-8 sm:pb-12 overflow-hidden">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="max-w-4xl mx-auto"
+                >
+                    <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center">
+                        📸 Hackreation Moments
+                    </h2>
+
+                    {/* Photo Container */}
+                    <div className="relative aspect-video rounded-2xl overflow-hidden bg-muted/30 shadow-lg">
+                        <AnimatePresence mode="wait">
+                            <motion.img
+                                key={currentPhotoIndex}
+                                src={hackreationPhotos[currentPhotoIndex]}
+                                alt={`Hackreation event photo ${currentPhotoIndex + 1}`}
+                                initial={{ opacity: 0, scale: 1.1 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ duration: 0.8 }}
+                                className="absolute inset-0 w-full h-full object-cover"
+                            />
+                        </AnimatePresence>
+
+                        {/* Gradient overlay for better visibility */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
+
+                        {/* Photo counter */}
+                        <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm">
+                            {currentPhotoIndex + 1} / {hackreationPhotos.length}
+                        </div>
+                    </div>
+
+                    {/* Navigation Dots */}
+                    <div className="flex justify-center gap-1.5 mt-4">
+                        {hackreationPhotos.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => setCurrentPhotoIndex(index)}
+                                className={`w-2 h-2 rounded-full transition-all duration-300 ${index === currentPhotoIndex
+                                        ? 'bg-primary w-6'
+                                        : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                                    }`}
+                                aria-label={`View photo ${index + 1}`}
+                            />
+                        ))}
+                    </div>
+                </motion.div>
+            </section>
             {!isAuthenticated && (
                 <section className="px-4 pb-6">
                     <motion.div

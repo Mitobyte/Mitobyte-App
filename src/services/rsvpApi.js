@@ -114,3 +114,20 @@ export async function getEventAttendees(eventId) {
 
   return response.json();
 }
+
+/**
+ * Get admin view of event attendees with full details (including email)
+ * @param {number} eventId 
+ * @returns {Promise<Object>} Attendees with full user details and stats
+ */
+export async function getAdminEventAttendees(eventId) {
+  const params = new URLSearchParams({ eventId: String(eventId) });
+  const response = await fetch(`${API_BASE_URL}/api/admin/rsvp-attendees?${params}`);
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch admin attendees');
+  }
+
+  return response.json();
+}

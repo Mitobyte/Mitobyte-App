@@ -102,7 +102,7 @@ export function MemberCard({ member, viewMode = 'grid', aiSearchMode = false }) 
                     {/* Name & Tagline */}
                     <div>
                         <h3 className="font-semibold text-lg tracking-tight group-hover:text-primary transition-colors">
-                            {member.display_name || member.email?.split('@')[0] || 'Member'}
+                            {member.display_name || 'Member'}
                         </h3>
                         {member.tagline && (
                             <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1">
@@ -226,7 +226,7 @@ export function MemberCard({ member, viewMode = 'grid', aiSearchMode = false }) 
             <div className="flex-1 min-w-0 space-y-1.5">
                 <div>
                     <h3 className="font-semibold text-base tracking-tight group-hover:text-primary transition-colors">
-                        {member.display_name || member.email?.split('@')[0] || 'Member'}
+                        {member.display_name || 'Member'}
                     </h3>
                     {member.tagline && (
                         <p className="text-sm text-muted-foreground line-clamp-1">

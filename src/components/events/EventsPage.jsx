@@ -87,12 +87,15 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
   };
 
   const handleRsvp = async (eventId, status) => {
+    console.log('🎫 handleRsvp called:', { eventId, status, currentStatus: rsvpStatus[eventId] });
+
     if (!walletAddress) {
       alert('Please sign in to RSVP for events');
       return;
     }
 
     const newStatus = rsvpStatus[eventId] === status ? null : status;
+    console.log('🎫 Computed newStatus:', newStatus);
 
     // Optimistically update UI
     setRsvpStatus(prev => ({
@@ -101,15 +104,18 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
     }));
 
     if (!newStatus) {
+      console.log('🎫 newStatus is null, skipping API call');
       return;
     }
 
     try {
-      await saveRsvp({
+      console.log('🎫 Calling saveRsvp with:', { eventId, walletAddress, rsvpStatus: newStatus });
+      const result = await saveRsvp({
         eventId,
         walletAddress,
         rsvpStatus: newStatus
       });
+      console.log('🎫 saveRsvp result:', result);
       // Refresh attendees after RSVP
       loadEventAttendees();
     } catch (error) {

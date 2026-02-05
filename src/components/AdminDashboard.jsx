@@ -25,6 +25,7 @@ import SyncTrigger from './admin/SyncTrigger'
 import EventAnalytics from './EventAnalytics'
 import { getAllUsers, promoteUserToAdmin, demoteUserFromAdmin, promoteUserToHost, demoteUserFromHost, promoteUserToSponsor, demoteUserFromSponsor, deleteUser, suspendUser, unsuspendUser } from '../services/adminApi'
 import { updateEvent, deleteEvent as deleteEventApi } from '../services/eventApi'
+import { getAdminEventAttendees } from '../services/rsvpApi'
 import { exportToCSV, formatDateForCSV } from '../utils/csvExport'
 import mitobyteLogoLarge from '../mitobyte-c-large.png'
 
@@ -53,6 +54,10 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
   const [filterTime, setFilterTime] = useState('upcoming')
   const [selectedEventForEdit, setSelectedEventForEdit] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedEventForRSVPs, setSelectedEventForRSVPs] = useState(null)
+  const [rsvpAttendees, setRsvpAttendees] = useState([])
+  const [rsvpStats, setRsvpStats] = useState({ going: 0, maybe: 0, no: 0, total: 0 })
+  const [loadingRsvps, setLoadingRsvps] = useState(false)
 
   // Check if user is admin (bootstrap admin OR database is_admin field)
   const isAdmin = user?.email?.startsWith('carl@craftthefuture.xyz') || dbUser?.is_admin === 1 || dbUser?.is_admin === true
@@ -165,15 +170,15 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
     const now = new Date()
     now.setHours(0, 0, 0, 0)
     if (filterTime === 'upcoming') {
-      filtered = filtered.filter(event => new Date(event.date) >= now)
+      filtered = filtered.filter(event => new Date(event.date + 'T00:00:00') >= now)
     } else if (filterTime === 'past') {
-      filtered = filtered.filter(event => new Date(event.date) < now)
+      filtered = filtered.filter(event => new Date(event.date + 'T00:00:00') < now)
     }
 
     // Sort by date (upcoming first, then past)
     filtered.sort((a, b) => {
-      const dateA = new Date(a.date)
-      const dateB = new Date(b.date)
+      const dateA = new Date(a.date + 'T00:00:00')
+      const dateB = new Date(b.date + 'T00:00:00')
       if (filterTime === 'past') {
         return dateB - dateA // Most recent past first
       }
@@ -187,7 +192,8 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
   const formatDate = (dateStr) => {
     if (!dateStr) return 'N/A'
     try {
-      const date = new Date(dateStr)
+      // Append T00:00:00 to force local timezone interpretation
+      const date = new Date(dateStr + 'T00:00:00')
       return date.toLocaleDateString('en-US', {
         weekday: 'short',
         year: 'numeric',
@@ -610,10 +616,7 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
             <nav className="flex space-x-4 sm:space-x-8 overflow-x-auto px-4 sm:px-0 scrollbar-hide">
               {[
                 { id: 'users', label: 'Users', icon: '👥', shortLabel: 'Users' },
-                { id: 'events', label: 'Event Management', icon: '📅', shortLabel: 'Events' },
-                { id: 'eventRequests', label: 'Event Requests', icon: '📝', shortLabel: 'Requests' },
-                { id: 'eventStats', label: 'Event Stats', icon: '📊', shortLabel: 'Stats' },
-                { id: 'checkIns', label: 'Check-Ins', icon: '✓', shortLabel: 'Check-Ins' },
+                { id: 'events', label: 'Events', icon: '📅', shortLabel: 'Events' },
                 { id: 'announcements', label: 'Announcements', icon: '📢', shortLabel: 'Announce' },
                 { id: 'invites', label: 'Invite System', icon: '🔒', shortLabel: 'Invites' },
                 { id: 'sponsors', label: 'Sponsor Banners', icon: '⭐', shortLabel: 'Sponsors' },
@@ -705,11 +708,14 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
                 <nav className="flex space-x-8 -mb-px">
                   {[
                     { id: 'my-events', label: 'All Events', icon: '📅' },
-                    { id: 'create', label: 'Create Event', icon: '➕' },
-                    { id: 'sync-meetups', label: 'Sync Meetups', icon: '🔄' },
-                    { id: 'csv-import', label: 'Import CSV', icon: '📤' },
-                    { id: 'ai-create', label: 'Create with AI', icon: '🤖' },
-                    { id: 'forms', label: 'Form Templates', icon: '📋' }
+                    { id: 'create', label: 'Create', icon: '➕' },
+                    { id: 'requests', label: 'Requests', icon: '📝' },
+                    { id: 'stats', label: 'Stats', icon: '📊' },
+                    { id: 'checkins', label: 'Check-Ins', icon: '✓' },
+                    { id: 'sync-meetups', label: 'Sync', icon: '🔄' },
+                    { id: 'csv-import', label: 'Import', icon: '📤' },
+                    { id: 'ai-create', label: 'AI Create', icon: '🤖' },
+                    { id: 'forms', label: 'Forms', icon: '📋' }
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -1012,6 +1018,14 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
                                     <span className="mr-2">📊</span>
                                     Analytics
                                   </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => setSelectedEventForRSVPs(event)}
+                                    variant="outline"
+                                  >
+                                    <span className="mr-2">📋</span>
+                                    RSVPs
+                                  </Button>
                                   {event.check_in_form_id && (
                                     <Button
                                       size="sm"
@@ -1113,24 +1127,25 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
                   </CardContent>
                 </Card>
               )}
+
+              {/* Event Requests Sub-tab */}
+              {eventsSubTab === 'requests' && (
+                <EventRequests adminEmail={user.email} />
+              )}
+
+              {/* Event Stats Sub-tab */}
+              {eventsSubTab === 'stats' && (
+                <EventStatsView />
+              )}
+
+              {/* Check-Ins Sub-tab */}
+              {eventsSubTab === 'checkins' && (
+                <CheckInDashboard />
+              )}
             </>
           )}
 
-          {activeTab === 'eventRequests' && (
-            <EventRequests adminEmail={user.email} />
-          )}
 
-          {activeTab === 'eventStats' && (
-            <EventStatsView />
-          )}
-
-          {activeTab === 'checkIns' && (
-            <CheckInDashboard />
-          )}
-
-          {activeTab === 'forms' && (
-            <FormTemplateManager user={user} />
-          )}
 
           {activeTab === 'announcements' && (
             <Announcements adminEmail={user.email} />
@@ -1353,6 +1368,33 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
         </div>
       )}
 
+      {/* RSVP Attendees Modal */}
+      {selectedEventForRSVPs && (
+        <RSVPModal
+          event={selectedEventForRSVPs}
+          attendees={rsvpAttendees}
+          stats={rsvpStats}
+          loading={loadingRsvps}
+          onClose={() => {
+            setSelectedEventForRSVPs(null)
+            setRsvpAttendees([])
+            setRsvpStats({ going: 0, maybe: 0, no: 0, total: 0 })
+          }}
+          onLoad={async () => {
+            setLoadingRsvps(true)
+            try {
+              const data = await getAdminEventAttendees(selectedEventForRSVPs.id)
+              setRsvpAttendees(data.attendees || [])
+              setRsvpStats(data.stats || { going: 0, maybe: 0, no: 0, total: 0 })
+            } catch (err) {
+              console.error('Failed to load RSVPs:', err)
+            } finally {
+              setLoadingRsvps(false)
+            }
+          }}
+        />
+      )}
+
       {/* Edit Event Modal */}
       <AnimatePresence>
         {showEditModal && selectedEventForEdit && (
@@ -1376,6 +1418,154 @@ export default function AdminDashboard({ user, dbUser, onBack, darkMode, toggleD
           />
         )}
       </AnimatePresence>
+    </div>
+  )
+}
+
+// RSVP Modal Component - Shows attendees for an event
+function RSVPModal({ event, attendees, stats, loading, onClose, onLoad }) {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+
+  useEffect(() => {
+    onLoad()
+  }, [])
+
+  const filteredAttendees = useMemo(() => {
+    let filtered = [...attendees]
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(a => a.rsvp_status === statusFilter)
+    }
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(a =>
+        a.display_name?.toLowerCase().includes(term) ||
+        a.email?.toLowerCase().includes(term)
+      )
+    }
+    return filtered
+  }, [attendees, statusFilter, searchTerm])
+
+  const handleExport = () => {
+    if (filteredAttendees.length === 0) return
+    const columns = [
+      { key: 'display_name', label: 'Name' },
+      { key: 'email', label: 'Email' },
+      { key: 'rsvp_status', label: 'Status' },
+      { key: 'rsvp_created_at', label: 'RSVP Date' }
+    ]
+    const formatted = filteredAttendees.map(a => ({
+      ...a,
+      rsvp_created_at: formatDateForCSV(a.rsvp_created_at)
+    }))
+    const eventTitle = event?.title?.replace(/[^a-zA-Z0-9]/g, '_') || 'event'
+    exportToCSV(formatted, `rsvps_${eventTitle}`, columns)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-background rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+      >
+        <div className="p-6 border-b">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-xl font-bold flex items-center gap-2">📋 RSVP Attendees</h2>
+              <p className="text-sm text-muted-foreground">{event?.title}</p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-4 gap-3 mt-4">
+            <div className="bg-green-500/10 rounded-lg p-3 text-center">
+              <div className="text-lg font-bold text-green-600">{stats.going}</div>
+              <div className="text-xs text-muted-foreground">Going</div>
+            </div>
+            <div className="bg-yellow-500/10 rounded-lg p-3 text-center">
+              <div className="text-lg font-bold text-yellow-600">{stats.maybe}</div>
+              <div className="text-xs text-muted-foreground">Maybe</div>
+            </div>
+            <div className="bg-red-500/10 rounded-lg p-3 text-center">
+              <div className="text-lg font-bold text-red-600">{stats.no}</div>
+              <div className="text-xs text-muted-foreground">No</div>
+            </div>
+            <div className="bg-muted rounded-lg p-3 text-center">
+              <div className="text-lg font-bold">{stats.total}</div>
+              <div className="text-xs text-muted-foreground">Total</div>
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="flex gap-2 mt-4">
+            <Input
+              placeholder="Search name or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1"
+            />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 rounded-md border bg-background text-sm"
+            >
+              <option value="all">All</option>
+              <option value="going">Going</option>
+              <option value="maybe">Maybe</option>
+              <option value="no">No</option>
+            </select>
+            <Button onClick={handleExport} variant="outline" size="sm" disabled={filteredAttendees.length === 0}>
+              📥 Export
+            </Button>
+          </div>
+        </div>
+
+        {/* Attendees List */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin text-3xl">⏳</div>
+            </div>
+          ) : filteredAttendees.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <div className="text-4xl mb-2">📭</div>
+              <p>No attendees found</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredAttendees.map((a) => (
+                <div key={a.rsvp_id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
+                      {a.display_name?.charAt(0)?.toUpperCase() || '?'}
+                    </div>
+                    <div>
+                      <div className="font-medium">{a.display_name || 'Anonymous User'}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {a.email || (a.user_wallet_hash ? `Wallet: ${a.user_wallet_hash.slice(0, 8)}...` : 'No email')}
+                      </div>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className={
+                    a.rsvp_status === 'going' ? 'bg-green-500/10 text-green-600' :
+                      a.rsvp_status === 'maybe' ? 'bg-yellow-500/10 text-yellow-600' :
+                        'bg-red-500/10 text-red-600'
+                  }>
+                    {a.rsvp_status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </motion.div>
     </div>
   )
 }

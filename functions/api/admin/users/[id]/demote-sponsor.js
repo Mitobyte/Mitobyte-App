@@ -1,34 +1,28 @@
-/**
- * Cloudflare Pages Function: /api/admin/users/:id/demote-sponsor
- * Demotes a user from sponsor status
- */
+import { requireAuth } from '../../../../utils/auth.js';
 
 export async function onRequestPost(context) {
   try {
-    const adminEmail = context.request.headers.get('Authorization')?.replace('Bearer ', '');
-
-    if (!adminEmail) {
-      return new Response(JSON.stringify({ error: 'Admin email required' }), {
+    // Verify authentication using JWT
+    let requestingUser;
+    try {
+      requestingUser = await requireAuth(context.request, context.env.JWT_SECRET);
+    } catch (e) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: Invalid token' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    // Verify admin status
-    const adminUser = await context.env.DB.prepare(
-      'SELECT is_admin FROM users WHERE email = ?'
-    )
-      .bind(adminEmail)
-      .first();
+    const targetUserId = context.params.id;
 
-    if (!adminUser || !adminUser.is_admin) {
+    // Allow if admin OR if user is targeting themselves
+    const isSelf = String(requestingUser.userId) === String(targetUserId);
+    if (!requestingUser.isAdmin && !isSelf) {
       return new Response(JSON.stringify({ error: 'Admin access required' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' }
       });
     }
-
-    const userId = context.params.id;
 
     // Demote user from sponsor
     await context.env.DB.prepare(
