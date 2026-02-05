@@ -147,7 +147,7 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
         const data = await response.json()
 
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to check in')
+          throw new Error(data.details || data.error || 'Failed to check in')
         }
       } else {
         // Guest check-in (no authentication)
@@ -178,7 +178,7 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
         const data = await response.json()
 
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to check in')
+          throw new Error(data.details || data.error || 'Failed to check in')
         }
       }
 
@@ -404,8 +404,8 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
                             handleInputChange(question.id, rating.toString());
                           }}
                           className={`p-3 rounded-lg transition-all touch-manipulation active:scale-95 ${formResponses[question.id] && parseInt(formResponses[question.id]) >= rating
-                              ? 'text-yellow-500 bg-yellow-500/10'
-                              : 'text-gray-300 hover:text-yellow-400 active:text-yellow-400'
+                            ? 'text-yellow-500 bg-yellow-500/10'
+                            : 'text-gray-300 hover:text-yellow-400 active:text-yellow-400'
                             }`}
                           title={`${rating} star${rating !== 1 ? 's' : ''}`}
                         >

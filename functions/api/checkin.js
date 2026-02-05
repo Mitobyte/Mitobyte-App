@@ -216,7 +216,11 @@ export async function onRequestPost(context) {
     }, 201);
   } catch (error) {
     console.error('Check-in error:', error);
-    return jsonResponse({ error: 'Failed to process check-in' }, 500);
+    return jsonResponse({
+      error: 'Failed to process check-in',
+      details: error.message,
+      stack: error.stack
+    }, 500);
   }
 }
 

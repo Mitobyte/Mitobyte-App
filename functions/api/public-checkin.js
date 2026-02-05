@@ -101,7 +101,7 @@ export async function onRequestPost(context) {
         event_id, user_wallet_hash, check_in_method, device_info,
         guest_name, guest_email
       )
-       VALUES (?, ?, 'public_form', ?, ?, ?)`
+       VALUES (?, ?, 'manual', ?, ?, ?)`
         )
             .bind(
                 event.id,
@@ -147,7 +147,11 @@ export async function onRequestPost(context) {
 
     } catch (error) {
         console.error('Public check-in error:', error);
-        return jsonResponse({ error: 'Failed to process check-in' }, 500);
+        return jsonResponse({
+            error: 'Failed to process check-in',
+            details: error.message,
+            stack: error.stack
+        }, 500);
     }
 }
 
@@ -188,7 +192,7 @@ export async function onRequestGet(context) {
 
         // Get public check-in count specifically
         const publicResult = await context.env.DB.prepare(
-            `SELECT COUNT(*) as count FROM checkins WHERE event_id = ? AND check_in_method = 'public_form'`
+            `SELECT COUNT(*) as count FROM checkins WHERE event_id = ? AND guest_email IS NOT NULL`
         )
             .bind(event.id)
             .first();
