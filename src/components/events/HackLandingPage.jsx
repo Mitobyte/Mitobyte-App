@@ -150,26 +150,26 @@ export function HackLandingPage({ user, walletAddress, isAuthenticated, onLogin,
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="max-w-3xl mx-auto"
+                    className="max-w-4xl mx-auto"
                 >
                     {/* Badge */}
                     <Badge variant="outline" className="mb-4 bg-primary/5 border-primary/20 text-primary">
-                        Dev Mode: ON
+                        Hackreation
                     </Badge>
 
                     {/* Title */}
-                    <h1 className="text-3xl sm:text-4xl lg:text-6xl font-black tracking-tight mb-3 sm:mb-4">
-                        HACKREATION
+                    <h1 className="text-3xl sm:text-4xl lg:text-6xl font-black tracking-tight mb-6">
+                        Create. Connect. Showcase.
                     </h1>
 
-                    {/* Subtitle */}
-                    <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-md sm:max-w-xl mx-auto mb-6 sm:mb-8 leading-relaxed">
-                        Every event is different. Every story matters. Join the community that builds together.
+                    {/* Intro Text */}
+                    <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
+                        Are you a hobbyist with a passion for tech? An entrepreneur building something new? Or just curious about software development and engineering? No matter your background, we’ve got the perfect space for you to create, connect, and showcase your skills!
                     </p>
 
                     {/* Stats - Only for authenticated users */}
                     {walletAddress && (
-                        <div className="inline-flex gap-6 sm:gap-8 bg-card border border-border rounded-2xl p-4 sm:p-5">
+                        <div className="inline-flex gap-6 sm:gap-8 bg-card border border-border rounded-2xl p-4 sm:p-5 mb-8">
                             <div className="text-center">
                                 <div className="text-2xl sm:text-3xl font-bold">{hackStats.attended}</div>
                                 <div className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Attended</div>
@@ -211,37 +211,60 @@ export function HackLandingPage({ user, walletAddress, isAuthenticated, onLogin,
                 </section>
             )}
 
-            {/* The Hackreation Framework - Mobile First Grid */}
+            {/* What you can do / Requirements */}
             <section className="px-4 py-8 sm:py-12">
-                <div className="max-w-6xl mx-auto">
-                    <div className="text-center mb-6 sm:mb-10">
-                        <h2 className="text-xl sm:text-2xl font-bold mb-2">THE HACKREATION FRAMEWORK</h2>
-                        <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                            More than just a hackathon. It's a system designed for your growth.
-                        </p>
+                <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
+
+                    {/* At our hackathon, you can... */}
+                    <div className="bg-card border border-border rounded-2xl p-6 sm:p-8">
+                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                            <span>🚀</span> At our hackathon, you can:
+                        </h2>
+
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="text-lg font-bold text-primary mb-2">Work on your own project</h3>
+                                <p className="text-muted-foreground">
+                                    Already have something you’re building? Bring it, and let’s see what you’ve got!
+                                </p>
+                            </div>
+
+                            <div>
+                                <h3 className="text-lg font-bold text-primary mb-2">Take on a fun challenge</h3>
+                                <p className="text-muted-foreground">
+                                    If you’re looking for inspiration, we’ll provide a creative project with real-world applications for you to solve.
+                                </p>
+                            </div>
+
+                            <div className="pt-4 border-t border-border/50">
+                                <p className="text-sm italic text-muted-foreground">
+                                    This is your chance to engage with like-minded builders, learn from others, and stretch your engineering skills. Whether you're building from scratch or leveling up an existing idea, this event is for YOU.
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Scrollable on mobile, grid on desktop */}
-                    <div className="flex overflow-x-auto pb-4 -mx-4 px-4 gap-3 sm:overflow-visible sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
-                        {[
-                            { icon: "🎨", title: "Unique Experiences", desc: "New themes, new challenges, new vibes every time." },
-                            { icon: "🤝", title: "Unmatched Support", desc: "Mentors, peers, and resources always available." },
-                            { icon: "⚡", title: "Be Challenged", desc: "Push your limits with challenges that make you grow." },
-                            { icon: "📖", title: "Tell Your Story", desc: "Document your journey and showcase your work." },
-                            { icon: "👥", title: "Meet New People", desc: "Connect with builders. Find your next co-founder." },
-                            { icon: "🔓", title: "Open Source", desc: "Access repos made by the community." },
-                            { icon: "🏆", title: "Earn Glory", desc: "Compete for prizes and exclusive badges." },
-                        ].map((item, idx) => (
-                            <div
-                                key={idx}
-                                className="shrink-0 w-[200px] sm:w-auto bg-card border border-border p-4 sm:p-5 rounded-xl"
-                            >
-                                <div className="text-2xl sm:text-3xl mb-3">{item.icon}</div>
-                                <h3 className="font-bold text-sm sm:text-base mb-1">{item.title}</h3>
-                                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                    {/* Requirements */}
+                    <div className="bg-card border border-border rounded-2xl p-6 sm:p-8">
+                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                            <span>💡</span> Requirements
+                        </h2>
+
+                        <div className="space-y-4 text-muted-foreground">
+                            <p>
+                                <strong className="text-foreground">The project must focus on software.</strong>
+                            </p>
+                            <p>
+                                You’ll need to demonstrate engineering effort and showcase your solution by the end of the event.
+                            </p>
+                            <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 mt-6">
+                                <p className="font-medium text-foreground text-center">
+                                    Come for the challenge, stay for the community. Let’s build something awesome together!
+                                </p>
                             </div>
-                        ))}
+                        </div>
                     </div>
+
                 </div>
             </section>
 

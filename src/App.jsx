@@ -804,22 +804,8 @@ function App() {
     )
   }
 
-  // PUBLIC: Event Check-in page - accessible without login
-  // Allows guests to check in by providing name/email
-  const eventCheckInMatch = currentPath.match(/^\/event\/(\d+)\/check-in$/)
-  if (eventCheckInMatch && !isAuthenticated) {
-    const eventId = eventCheckInMatch[1]
-    console.log('📍 RENDERING: Public Event Check-In (Guest Mode) for event:', eventId)
-    return (
-      <PublicEventCheckIn
-        eventId={eventId}
-        onNavigateHome={() => {
-          window.history.pushState({}, '', '/')
-          setCurrentPath('/')
-        }}
-      />
-    )
-  }
+  // PUBLIC: Event Check-in page - handled by EventCheckInDrawer via useEffect
+  // Logic at line 415 parses URL and opens the drawer for both auth and guest users
 
   const benefits = [
     {

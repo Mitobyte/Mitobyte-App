@@ -5,7 +5,6 @@ const BottomNav = ({ activeTab, onTabChange }) => {
   const tabs = [
     { id: 'events', label: 'Events', icon: '📅' },
     { id: 'showcase', label: 'Feed', icon: '📰' },
-    { id: 'checkin', label: 'Connect', icon: '🔗' },
     { id: 'directory', label: 'Directory', icon: '👥' },
     { id: 'profile', label: 'Profile', icon: '👤' }
   ]
@@ -24,18 +23,16 @@ const BottomNav = ({ activeTab, onTabChange }) => {
               <button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
-                className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors ${
-                  isActive ? '' : 'hover:bg-foreground/5'
-                }`}
+                className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors ${isActive ? '' : 'hover:bg-foreground/5'
+                  }`}
               >
                 {/* Icon */}
                 <span className="text-lg">{tab.icon}</span>
 
                 {/* Label */}
                 <span
-                  className={`text-xs font-medium ${
-                    isActive ? 'text-foreground' : 'text-muted-foreground'
-                  }`}
+                  className={`text-xs font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'
+                    }`}
                 >
                   {tab.label}
                 </span>
