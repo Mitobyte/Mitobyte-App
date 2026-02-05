@@ -17,9 +17,20 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
   const { user } = useAuth()
   const { wallet } = useWallet()
 
+  // Guest check-in fields (for unauthenticated users)
+  const [guestName, setGuestName] = useState('')
+  const [guestEmail, setGuestEmail] = useState('')
+
+  // Determine if user is authenticated
+  const isAuthenticated = !!(wallet?.address || user?.email)
+  const walletAddress = wallet?.address || (user?.email ? `email:${user.email}` : null)
+
   useEffect(() => {
     if (isOpen && eventId) {
       fetchEventAndForm()
+      // Reset guest fields when drawer opens
+      setGuestName('')
+      setGuestEmail('')
     }
   }, [isOpen, eventId])
 
@@ -40,7 +51,8 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
 
       // Check if event has a check-in form assigned
       if (!eventData.event.check_in_form_id) {
-        setError('This event does not have a check-in form configured.')
+        // No form - that's okay for guest check-in, just proceed without custom form
+        setFormTemplate(null)
         setLoading(false)
         return
       }
@@ -50,7 +62,11 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
       const formData = await formRes.json()
 
       if (!formRes.ok) {
-        throw new Error('Failed to load check-in form')
+        // Form fetch failed, but we can still check in without it
+        console.warn('Failed to load check-in form, proceeding without custom fields')
+        setFormTemplate(null)
+        setLoading(false)
+        return
       }
 
       setFormTemplate(formData.template)
@@ -88,38 +104,82 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
     })
   }
 
+  const validateGuestFields = () => {
+    if (!guestName.trim()) {
+      setError('Please enter your name')
+      return false
+    }
+    if (!guestEmail.trim()) {
+      setError('Please enter your email')
+      return false
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(guestEmail)) {
+      setError('Please enter a valid email address')
+      return false
+    }
+    return true
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
 
     try {
-      const walletAddress = wallet?.address || (user?.email ? `email:${user.email}` : null)
+      // If authenticated user, use the existing check-in flow
+      if (isAuthenticated) {
+        if (!event?.check_in_code) {
+          throw new Error('This event does not have a check-in code configured')
+        }
 
-      if (!walletAddress) {
-        throw new Error('Please log in to check in to this event')
-      }
-
-      if (!event?.check_in_code) {
-        throw new Error('This event does not have a check-in code configured')
-      }
-
-      // Submit check-in with form responses using the correct API format
-      const response = await fetch('/api/checkin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          checkInCode: event.check_in_code,
-          userWalletHash: walletAddress,
-          customFormResponses: JSON.stringify(formResponses),
-          formId: event.check_in_form_id
+        const response = await fetch('/api/checkin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            checkInCode: event.check_in_code,
+            userWalletHash: walletAddress,
+            customFormResponses: formTemplate ? JSON.stringify(formResponses) : null,
+            formId: event.check_in_form_id || null
+          })
         })
-      })
 
-      const data = await response.json()
+        const data = await response.json()
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to check in')
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to check in')
+        }
+      } else {
+        // Guest check-in (no authentication)
+        if (!validateGuestFields()) {
+          setSubmitting(false)
+          return
+        }
+
+        const deviceInfo = {
+          userAgent: navigator.userAgent,
+          platform: navigator.platform,
+          language: navigator.language
+        }
+
+        const response = await fetch('/api/public-checkin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eventId: parseInt(eventId),
+            guestName: guestName.trim(),
+            guestEmail: guestEmail.trim().toLowerCase(),
+            deviceInfo: JSON.stringify(deviceInfo),
+            formResponses: formTemplate ? JSON.stringify(formResponses) : null,
+            formId: formTemplate?.id || null
+          })
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to check in')
+        }
       }
 
       setSuccess(true)
@@ -158,12 +218,17 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
           >
             <div className="text-6xl mb-4">✅</div>
             <h2 className="text-2xl font-bold mb-2">Check-in Successful!</h2>
-            <p className="text-muted-foreground mb-6">You've successfully checked in to {event?.title}</p>
+            <p className="text-muted-foreground mb-6">
+              {isAuthenticated
+                ? `You've successfully checked in to ${event?.title}`
+                : `Welcome, ${guestName}! You're checked in to ${event?.title}`
+              }
+            </p>
             <Button onClick={onClose}>Close</Button>
           </motion.div>
         )}
 
-        {event && formTemplate && !success && !loading && (
+        {event && !success && !loading && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -180,7 +245,48 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {formTemplate.questions?.map((question) => (
+              {/* Guest info fields - only show if not authenticated */}
+              {!isAuthenticated && (
+                <div className="space-y-4 pb-4 mb-4 border-b border-border">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                    <span>👤</span>
+                    <span>Your Information</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="guestName" className="block text-sm font-medium">
+                      Full Name <span className="text-destructive">*</span>
+                    </label>
+                    <Input
+                      id="guestName"
+                      type="text"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      placeholder="Enter your full name"
+                      required
+                      disabled={submitting}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="guestEmail" className="block text-sm font-medium">
+                      Email Address <span className="text-destructive">*</span>
+                    </label>
+                    <Input
+                      id="guestEmail"
+                      type="email"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      required
+                      disabled={submitting}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Custom form questions */}
+              {formTemplate?.questions?.map((question) => (
                 <div key={question.id} className="space-y-2">
                   <label className="block text-sm font-medium">
                     {question.label}
@@ -297,11 +403,10 @@ export function EventCheckInDrawer({ isOpen, onClose, eventId }) {
                             e.preventDefault();
                             handleInputChange(question.id, rating.toString());
                           }}
-                          className={`p-3 rounded-lg transition-all touch-manipulation active:scale-95 ${
-                            formResponses[question.id] && parseInt(formResponses[question.id]) >= rating
+                          className={`p-3 rounded-lg transition-all touch-manipulation active:scale-95 ${formResponses[question.id] && parseInt(formResponses[question.id]) >= rating
                               ? 'text-yellow-500 bg-yellow-500/10'
                               : 'text-gray-300 hover:text-yellow-400 active:text-yellow-400'
-                          }`}
+                            }`}
                           title={`${rating} star${rating !== 1 ? 's' : ''}`}
                         >
                           <span className="text-3xl leading-none block">⭐</span>

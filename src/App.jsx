@@ -31,6 +31,7 @@ import { HackreationAdmin } from './components/events/HackreationAdmin'
 import mitobyteLogoLarge from './mitobyte-c-large.png'
 import { MemberDirectory } from './components/community/MemberDirectory'
 import { LandingPage } from './components/LandingPage'
+import { PublicEventCheckIn } from './components/PublicEventCheckIn'
 
 function App() {
   const [darkMode, setDarkMode] = useState(false)
@@ -799,6 +800,23 @@ function App() {
         walletAddress={walletAddress}
         isAuthenticated={isAuthenticated}
         onLogin={handleJoinCommunity}
+      />
+    )
+  }
+
+  // PUBLIC: Event Check-in page - accessible without login
+  // Allows guests to check in by providing name/email
+  const eventCheckInMatch = currentPath.match(/^\/event\/(\d+)\/check-in$/)
+  if (eventCheckInMatch && !isAuthenticated) {
+    const eventId = eventCheckInMatch[1]
+    console.log('📍 RENDERING: Public Event Check-In (Guest Mode) for event:', eventId)
+    return (
+      <PublicEventCheckIn
+        eventId={eventId}
+        onNavigateHome={() => {
+          window.history.pushState({}, '', '/')
+          setCurrentPath('/')
+        }}
       />
     )
   }
