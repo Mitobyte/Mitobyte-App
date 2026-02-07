@@ -1,6 +1,7 @@
 /**
  * Cloudflare Pages Function: /api/admin/rsvp-attendees
  * Admin-only endpoint to fetch RSVP attendees with full details (including email)
+ * Updated: 2026-02-05
  */
 
 function jsonResponse(data, status = 200) {
