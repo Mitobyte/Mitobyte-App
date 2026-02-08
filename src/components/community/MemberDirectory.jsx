@@ -17,14 +17,13 @@ export function MemberDirectory({ currentUserWallet, currentUserProfile }) {
   const [connections, setConnections] = useState([]);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
 
-  // Check if current user has a complete profile
+  // Check if current user has a complete profile (only name is required now)
   const isProfileComplete = currentUserProfile &&
-    currentUserProfile.display_name &&
-    currentUserProfile.bio;
+    currentUserProfile.display_name;
 
   // Helper to check if a member has a complete profile
   const hasCompleteProfile = (member) =>
-    member.display_name && member.bio;
+    member.display_name;
 
   useEffect(() => {
     fetchMembers();
@@ -164,7 +163,7 @@ export function MemberDirectory({ currentUserWallet, currentUserProfile }) {
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 text-sm flex items-center gap-2">
           <span>✨</span>
           <p className="text-foreground/90">
-            <strong>Complete your profile</strong> to appear in the Community. Add a display name and bio in your{' '}
+            <strong>Complete your profile</strong> to appear in the Community. Add your name in your{' '}
             <button
               onClick={() => {
                 window.history.pushState({}, '', '/settings');
