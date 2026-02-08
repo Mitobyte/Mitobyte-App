@@ -10,7 +10,7 @@ export async function onRequestGet(context) {
       SELECT
         u.wallet_hash,
         u.email,
-        u.display_name,
+        COALESCE(up.name, u.display_name, u.email) as display_name,
         u.created_at,
         up.avatar_url,
         up.bio,
