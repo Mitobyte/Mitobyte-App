@@ -553,9 +553,11 @@ export function OnboardingFlow({ user, walletAddress, onComplete }) {
                       <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></div>
                       <span className="hidden sm:inline">{currentStep === steps.length - 1 ? 'Completing...' : 'Saving...'}</span>
                     </span>
-                  ) : currentStep === steps.length - 1 ? (
+                  ) : currentStepData.id === 'complete' ? (
                     'Let\'s Go!'
-                  ) : currentStep === 0 ? (
+                  ) : currentStepData.id === 'invite' ? (
+                    'Verify Code'
+                  ) : currentStepData.id === 'welcome' ? (
                     'Get Started'
                   ) : (
                     'Continue'
