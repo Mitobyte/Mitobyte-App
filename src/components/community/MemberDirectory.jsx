@@ -17,13 +17,14 @@ export function MemberDirectory({ currentUserWallet, currentUserProfile }) {
   const [connections, setConnections] = useState([]);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
 
-  // Check if current user has a complete profile (only name is required now)
+  // Check if current user has a complete profile (name and bio required for directory visibility)
   const isProfileComplete = currentUserProfile &&
-    currentUserProfile.display_name;
+    currentUserProfile.display_name &&
+    currentUserProfile.bio;
 
   // Helper to check if a member has a complete profile
   const hasCompleteProfile = (member) =>
-    member.display_name;
+    member.display_name && member.bio;
 
   useEffect(() => {
     fetchMembers();
@@ -158,12 +159,12 @@ export function MemberDirectory({ currentUserWallet, currentUserProfile }) {
 
   return (
     <div className="space-y-4">
-      {/* Incomplete Profile Banner */}
+      {/* Incomplete Profile Notification */}
       {currentUserWallet && !isProfileComplete && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 text-sm flex items-center gap-2">
-          <span>✨</span>
-          <p className="text-foreground/90">
-            <strong>Complete your profile</strong> to appear in the Community. Add your name in your{' '}
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 text-sm flex items-center gap-3">
+          <span className="text-xl">🔔</span>
+          <p className="text-foreground/90 flex-1">
+            <strong>Complete your profile</strong> to appear in the Community. Add a bio in your{' '}
             <button
               onClick={() => {
                 window.history.pushState({}, '', '/settings');
