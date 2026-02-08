@@ -9,6 +9,7 @@ import AIProfileBuilder from './ResumeUpload'; // Component renamed to AIProfile
 
 export default function ProfileEditPage({ user, walletAddress, onBack }) {
   const [formData, setFormData] = useState({
+    name: '',
     display_name: '',
     avatar_url: '',
     tagline: '',
@@ -46,6 +47,7 @@ export default function ProfileEditPage({ user, walletAddress, onBack }) {
       if (data.success && data.profile) {
         const displayName = data.profile.display_name || data.profile.email?.split('@')[0] || '';
         setFormData({
+          name: data.profile.name || '',
           display_name: displayName,
           avatar_url: data.profile.avatar_url || '',
           tagline: data.profile.tagline || '',
@@ -289,6 +291,25 @@ export default function ProfileEditPage({ user, walletAddress, onBack }) {
         <Card>
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Full Name */}
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium mb-2">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleChange('name', e.target.value)}
+                  placeholder="Your first and last name"
+                  maxLength={60}
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  This is how your name will appear to other attendees
+                </p>
+              </div>
+
               {/* Username */}
               <div>
                 <label htmlFor="display_name" className="block text-sm font-medium mb-2">

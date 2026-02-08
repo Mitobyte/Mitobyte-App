@@ -1,113 +1,36 @@
 import { motion } from 'framer-motion';
-import { Button } from '../ui/button';
 
-export function EventsHeroBanner({ onCreateEvent, isAdmin }) {
+export function EventsHeroBanner({ onCreateEvent, onFindEvents, isAdmin }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-background border border-primary/20 mb-8"
+      className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b border-primary/10 px-4 py-3 mb-6"
     >
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
-          backgroundSize: '40px 40px'
-        }} />
-      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 max-w-7xl mx-auto">
+        <div className="flex items-center gap-3">
+          <span className="text-xl">🎯</span>
+          <div>
+            <h1 className="text-lg font-semibold">Milwaukee Tech Events</h1>
+            <p className="text-sm text-muted-foreground hidden sm:block">
+              Connect, learn, and build with Milwaukee's tech community
+            </p>
+          </div>
+        </div>
 
-      <div className="relative px-6 py-12 sm:px-12 sm:py-16">
-        <div className="max-w-3xl">
-          {/* Title */}
-          <motion.h1
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-4xl sm:text-5xl font-bold mb-4"
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onFindEvents}
+            className="text-sm px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
           >
-            Milwaukee Tech Events
-          </motion.h1>
-
-          {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-lg sm:text-xl text-muted-foreground mb-8"
+            🔍 Find Events
+          </button>
+          <button
+            onClick={onCreateEvent}
+            className="text-sm px-3 py-1.5 rounded-full border border-border hover:bg-accent transition-colors"
           >
-            Connect, learn, and build with Milwaukee's tech community — Powered by Mitobyte
-          </motion.p>
-
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex flex-wrap gap-4"
-          >
-            <Button
-              size="lg"
-              className="rounded-full px-8"
-              onClick={() => {
-                document.getElementById('events-list')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              <span className="mr-2">🔍</span>
-              Find Events
-            </Button>
-
-            {isAdmin ? (
-              <Button
-                size="lg"
-                variant="outline"
-                className="rounded-full px-8"
-                onClick={onCreateEvent}
-              >
-                <span className="mr-2">➕</span>
-                Create Event
-              </Button>
-            ) : (
-              <Button
-                size="lg"
-                variant="outline"
-                className="rounded-full px-8"
-                onClick={onCreateEvent}
-              >
-                <span className="mr-2">📝</span>
-                Request Event
-              </Button>
-            )}
-          </motion.div>
-
-          {/* Quick Stats */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="mt-8 flex flex-wrap gap-6 text-sm"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🎯</span>
-              <div>
-                <div className="font-semibold">Community-Driven</div>
-                <div className="text-muted-foreground">By devs, for devs</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🏙️</span>
-              <div>
-                <div className="font-semibold">Milwaukee Local</div>
-                <div className="text-muted-foreground">Meet IRL</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🚀</span>
-              <div>
-                <div className="font-semibold">All Skill Levels</div>
-                <div className="text-muted-foreground">Beginners welcome</div>
-              </div>
-            </div>
-          </motion.div>
+            {isAdmin ? '➕ Create' : '📝 Request'}
+          </button>
         </div>
       </div>
     </motion.div>

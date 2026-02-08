@@ -25,6 +25,7 @@ export async function onRequestGet(context) {
         r.created_at,
         u.email,
         u.display_name,
+        up.name,
         up.avatar_url,
         up.bio
       FROM rsvps r

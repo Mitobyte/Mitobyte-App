@@ -112,6 +112,27 @@ export default function SettingsPage({ user, dbUser, walletAddress, onBack, onLo
           <h1 className="text-3xl font-bold">Settings</h1>
         </div>
 
+        {/* Edit Profile */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile Information</CardTitle>
+            <CardDescription>
+              Update your name, photo, bio, and social links
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={() => {
+                window.history.pushState({}, '', '/profile/edit');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="w-full"
+            >
+              ✏️ Edit My Profile
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Profile Visibility */}
         <Card>
           <CardHeader>

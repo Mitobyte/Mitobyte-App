@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { EventsHeroBanner } from './EventsHeroBanner';
 import { EnhancedEventCard } from './EnhancedEventCard';
 import { EventDetailDrawer } from './EventDetailDrawer';
@@ -21,17 +21,28 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
   const [aiSearchMode, setAiSearchMode] = useState(false);
   const [aiSearchResults, setAiSearchResults] = useState([]);
   const [aiSearching, setAiSearching] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
 
-  // Unified filter options - combines view mode and event types
-  const filterOptions = [
-    { value: 'all', label: 'All Events', icon: '🎉', type: 'view' },
-    { value: 'calendar', label: 'Calendar View', icon: '📅', type: 'view' },
-    ...(walletAddress ? [{ value: 'my-events', label: 'My Events', icon: '✅', type: 'view', badge: Object.values(rsvpStatus).filter(s => s === 'going').length }] : []),
-    { value: 'meetup', label: 'Meetups', icon: '🤝', type: 'event' },
-    { value: 'workshop', label: 'Workshops', icon: '🎓', type: 'event' },
-    { value: 'hackathon', label: 'Hackathons', icon: '💻', type: 'event' },
-    { value: 'code_and_coffee', label: 'Code & Coffee', icon: '☕', type: 'event' },
-    { value: 'code_and_brews', label: 'Code & Brews', icon: '🍺', type: 'event' }
+  // Event type filters (icon-only)
+  const eventTypeFilters = [
+    { value: 'all', icon: '🎉', label: 'All' },
+    ...(walletAddress ? [{ value: 'my-events', icon: '✅', label: 'My Events', badge: Object.values(rsvpStatus).filter(s => s === 'going').length }] : []),
+    { value: 'code_and_coffee', icon: '☕', label: 'Coffee' },
+    { value: 'code_and_brews', icon: '🍺', label: 'Brews' },
+    { value: 'hackathon', icon: '💻', label: 'Hackathons' },
+    { value: 'meetup', icon: '🤝', label: 'Meetups' },
+    { value: 'workshop', icon: '🎓', label: 'Workshops' }
+  ];
+
+  // View mode options
+  const [viewMode, setViewMode] = useState('grid');
+
+  // Sort options
+  const [sortBy, setSortBy] = useState('upcoming');
+  const sortOptions = [
+    { value: 'featured', label: 'Featured' },
+    { value: 'upcoming', label: 'Upcoming' },
+    { value: 'past', label: 'Past' }
   ];
 
   useEffect(() => {
@@ -128,20 +139,25 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
     }
   };
 
-  const handleAiSearch = async () => {
-    if (!searchTerm.trim()) {
+  const handleAiSearch = async (term = searchTerm) => {
+    const query = term || searchTerm;
+    if (!query.trim()) {
       alert('Please enter a search query');
       return;
     }
 
     setAiSearching(true);
-    setAiSearchMode(true);
+    setAiSearching(true);
+    // Keep search execution local to modal, don't update main view mode
+    // setAiSearchMode(true);
+    // Don't close modal on search, show results inline
+    // setShowSearchModal(false);
 
     try {
       const response = await fetch('/api/events/ai-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: searchTerm })
+        body: JSON.stringify({ query: query })
       });
 
       const data = await response.json();
@@ -170,7 +186,7 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  // Filter events based on unified filter
+  // Filter and sort events
   const filteredEvents = useMemo(() => {
     // If AI search is active, use AI results
     if (aiSearchMode && aiSearchResults.length > 0) {
@@ -182,7 +198,7 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
       }
 
       // Apply event type filter to AI results
-      if (selectedFilter !== 'all' && selectedFilter !== 'calendar' && selectedFilter !== 'my-events') {
+      if (selectedFilter !== 'all' && selectedFilter !== 'my-events') {
         filtered = filtered.filter(event => event.event_type === selectedFilter);
       }
 
@@ -191,11 +207,6 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
 
     // Regular filtering
     let filtered = [...events];
-
-    // Calendar view needs all events to show properly in monthly grid
-    if (selectedFilter === 'calendar') {
-      return filtered;
-    }
 
     // Apply My Events filter
     if (selectedFilter === 'my-events') {
@@ -217,8 +228,27 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
       );
     }
 
+    // Sort based on sortBy
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (sortBy === 'past') {
+      filtered = filtered.filter(event => new Date(event.date + 'T00:00:00') < today);
+      filtered.sort((a, b) => new Date(b.date) - new Date(a.date)); // Most recent past first
+    } else if (sortBy === 'upcoming') {
+      filtered = filtered.filter(event => new Date(event.date + 'T00:00:00') >= today);
+      filtered.sort((a, b) => new Date(a.date) - new Date(b.date)); // Soonest first
+    } else if (sortBy === 'featured') {
+      // Featured: prioritize events with is_featured flag, then by date
+      filtered.sort((a, b) => {
+        if (a.is_featured && !b.is_featured) return -1;
+        if (!a.is_featured && b.is_featured) return 1;
+        return new Date(a.date) - new Date(b.date);
+      });
+    }
+
     return filtered;
-  }, [events, searchTerm, selectedFilter, rsvpStatus, aiSearchMode, aiSearchResults]);
+  }, [events, selectedFilter, searchTerm, aiSearchMode, aiSearchResults, rsvpStatus, sortBy]);
 
   // Calendar Logic
   const calendarData = useMemo(() => {
@@ -258,66 +288,174 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
       <div className="mb-8 sm:mb-10 lg:mb-12">
         <EventsHeroBanner
           onCreateEvent={() => setShowRequestForm(true)}
+          onFindEvents={() => setShowSearchModal(true)}
           isAdmin={isAdmin}
         />
       </div>
 
-      {/* Unified Filter Pills */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex flex-wrap gap-2 sm:gap-3">
-          {filterOptions.map((filter) => (
+      {/* Minimalist Filter Bar - Framer Style */}
+      <div className="mb-6 space-y-3">
+        {/* Top row: Event Type Icons with horizontal scroll on mobile */}
+        <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 py-2 sm:mx-0 sm:px-0 sm:py-2">
+          <div className="flex items-center gap-1 min-w-max sm:min-w-0">
+            {eventTypeFilters.map((filter) => (
+              <motion.button
+                key={filter.value}
+                onClick={() => setSelectedFilter(filter.value)}
+                title={filter.label}
+                layout
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`relative h-10 rounded-xl flex items-center justify-center text-lg transition-colors flex-shrink-0 ${selectedFilter === filter.value
+                  ? 'bg-primary text-primary-foreground shadow-md px-3 gap-2'
+                  : 'hover:bg-foreground/5 w-10'
+                  }`}
+              >
+                <motion.span layout="position">{filter.icon}</motion.span>
+                <AnimatePresence>
+                  {selectedFilter === filter.value && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: 'auto' }}
+                      exit={{ opacity: 0, width: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="text-sm font-medium whitespace-nowrap overflow-hidden"
+                    >
+                      {filter.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+                {filter.badge > 0 && selectedFilter !== filter.value && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-[10px] text-primary-foreground flex items-center justify-center">
+                    {filter.badge}
+                  </span>
+                )}
+                {filter.badge > 0 && selectedFilter === filter.value && (
+                  <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary-foreground/20 text-[10px] text-primary-foreground">
+                    {filter.badge}
+                  </span>
+                )}
+              </motion.button>
+            ))}
+
+            {/* Hackreation Hub Link */}
+            <div className="h-8 w-px bg-border mx-1" />
             <button
-              key={filter.value}
-              onClick={() => setSelectedFilter(filter.value)}
-              className={`flex items-center justify-center px-4 sm:px-5 py-2.5 sm:py-3 rounded-full text-xs sm:text-sm font-medium transition-all touch-manipulation active:scale-95 ${selectedFilter === filter.value
-                ? 'bg-primary text-primary-foreground shadow-md'
-                : 'border-2 border-border hover:bg-foreground/5 hover:border-foreground/20'
-                }`}
+              onClick={() => {
+                window.history.pushState({}, '', '/hack');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="group flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg border border-transparent hover:border-border/40 hover:bg-foreground/5 whitespace-nowrap"
             >
-              <span className="text-base sm:text-lg">{filter.icon}</span>
-              <span className="ml-1.5 sm:ml-2 whitespace-nowrap">{filter.label}</span>
-              {filter.badge > 0 && (
-                <Badge className="ml-1.5 sm:ml-2 text-xs" variant="secondary">
-                  {filter.badge}
-                </Badge>
-              )}
+              <span className="text-base">💻</span>
+              <span className="hidden sm:inline">Hackreation Hub</span>
+              <span className="sm:hidden">Hub</span>
+              <span className="group-hover:translate-x-0.5 transition-transform">→</span>
             </button>
-          ))}
+          </div>
+        </div>
+
+        {/* Bottom row: Sort & View Controls */}
+        <div className="flex items-center justify-between gap-2">
+          {/* Sort Options */}
+          <div className="flex items-center rounded-lg border border-border overflow-hidden">
+            {sortOptions.map((sort) => (
+              <motion.button
+                key={sort.value}
+                onClick={() => setSortBy(sort.value)}
+                whileTap={{ scale: 0.95 }}
+                className={`px-2.5 sm:px-3 py-1.5 text-xs font-medium transition-colors relative ${sortBy === sort.value
+                  ? 'text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                  }`}
+              >
+                {sortBy === sort.value && (
+                  <motion.div
+                    layoutId="activeSort"
+                    className="absolute inset-0 bg-foreground/10 -z-10"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
+                  />
+                )}
+                {sort.label}
+              </motion.button>
+            ))}
+          </div>
+
+          {/* View Mode Toggle */}
+          <div className="flex items-center rounded-lg border border-border overflow-hidden">
+            <motion.button
+              onClick={() => setViewMode('list')}
+              title="List View"
+              whileTap={{ scale: 0.9 }}
+              className={`p-2 transition-colors relative ${viewMode === 'list' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {viewMode === 'list' && (
+                <motion.div
+                  layoutId="activeView"
+                  className="absolute inset-0 bg-foreground/10 -z-10"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
+                />
+              )}
+              ☰
+            </motion.button>
+            <motion.button
+              onClick={() => setViewMode('grid')}
+              title="Grid View"
+              whileTap={{ scale: 0.9 }}
+              className={`p-2 transition-colors relative ${viewMode === 'grid' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {viewMode === 'grid' && (
+                <motion.div
+                  layoutId="activeView"
+                  className="absolute inset-0 bg-foreground/10 -z-10"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
+                />
+              )}
+              ▦
+            </motion.button>
+          </div>
         </div>
       </div>
 
-      {/* Hackreation Hub Banner */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-6 sm:mb-8"
-      >
-        <button
-          onClick={() => {
-            window.history.pushState({}, '', '/hack');
-            window.dispatchEvent(new PopStateEvent('popstate'));
-          }}
-          className="w-full p-4 sm:p-5 rounded-xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 border border-purple-500/20 hover:border-purple-500/40 transition-all group flex items-center justify-between"
-        >
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-purple-500/20 flex items-center justify-center text-2xl sm:text-3xl">
-              💻
-            </div>
-            <div className="text-left">
-              <div className="font-bold text-base sm:text-lg group-hover:text-primary transition-colors">
-                Hackreation Hub
+
+
+      {/* Hackreation Hub Banner - Only for Hackathon Tab */}
+      <AnimatePresence>
+        {selectedFilter === 'hackathon' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 32 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            className="overflow-hidden"
+          >
+            <button
+              onClick={() => {
+                window.history.pushState({}, '', '/hack');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="w-full p-4 sm:p-5 rounded-xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 border border-purple-500/20 hover:border-purple-500/40 transition-all group flex items-center justify-between"
+            >
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-purple-500/20 flex items-center justify-center text-2xl sm:text-3xl">
+                  💻
+                </div>
+                <div className="text-left">
+                  <div className="font-bold text-base sm:text-lg group-hover:text-primary transition-colors">
+                    Hackreation Hub
+                  </div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">
+                    Join hackathons, submit projects, and compete for prizes
+                  </div>
+                </div>
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Join hackathons, submit projects, and compete for prizes
+              <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-primary">
+                <span>Explore</span>
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
               </div>
-            </div>
-          </div>
-          <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-primary">
-            <span>Explore</span>
-            <span className="group-hover:translate-x-1 transition-transform">→</span>
-          </div>
-        </button>
-      </motion.div>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Filters */}
       <div id="events-list" className="space-y-5 sm:space-y-6 mb-8 sm:mb-10">
@@ -349,42 +487,7 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
         )}
 
         {/* Search */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-3">
-          <div className="relative flex-1">
-            <Input
-              placeholder="✨ Try: 'morning coding events', 'learn web development'..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                if (aiSearchMode) setAiSearchMode(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && searchTerm.trim()) {
-                  handleAiSearch();
-                }
-              }}
-              className="h-12 sm:h-14 text-base pl-4"
-            />
-          </div>
-          <button
-            onClick={handleAiSearch}
-            disabled={aiSearching || !searchTerm.trim()}
-            className="px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg sm:rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 text-white font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap touch-manipulation active:scale-95 shadow-lg"
-          >
-            {aiSearching ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block mr-2" />
-                Searching...
-              </>
-            ) : (
-              <>
-                <span className="mr-2 text-lg">✨</span>
-                <span className="hidden sm:inline">AI Search</span>
-                <span className="sm:hidden">Search</span>
-              </>
-            )}
-          </button>
-        </div>
+
 
         <p className="text-xs sm:text-sm text-muted-foreground px-1">
           💡 Tip: Use natural language like "evening coding events" or "learn React" for AI-powered discovery
@@ -399,87 +502,9 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
             <p className="text-sm text-muted-foreground">Loading events...</p>
           </div>
         </div>
-      ) : selectedFilter === 'calendar' ? (
-        /* Calendar View rendering */
-        <div className="animate-in fade-in duration-500">
-          {/* Month Navigation */}
-          <div className="flex items-center justify-between mb-6 bg-card border border-border rounded-xl p-3 shadow-sm">
-            <button
-              onClick={prevMonth}
-              className="px-4 py-2 hover:bg-muted rounded-lg transition-colors"
-            >
-              ← Prev
-            </button>
-            <h3 className="text-lg font-semibold">
-              {monthNames[calendarData.month]} {calendarData.year}
-            </h3>
-            <button
-              onClick={nextMonth}
-              className="px-4 py-2 hover:bg-muted rounded-lg transition-colors"
-            >
-              Next →
-            </button>
-          </div>
-
-          <div className="border border-border rounded-xl overflow-hidden shadow-sm bg-card">
-            <div className="grid grid-cols-7 bg-muted/50 border-b border-border">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="p-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  {day}
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 bg-background">
-              {calendarData.weeks.map((week, weekIndex) => (
-                week.map((day, dayIndex) => {
-                  const dayEvents = getEventsForDate(day);
-                  const isToday = day &&
-                    new Date().getDate() === day &&
-                    new Date().getMonth() === calendarData.month &&
-                    new Date().getFullYear() === calendarData.year;
-
-                  return (
-                    <div
-                      key={`${weekIndex}-${dayIndex}`}
-                      className={`min-h-[120px] p-2 border-r border-b border-border/50 transition-colors ${!day ? 'bg-muted/10' : 'hover:bg-muted/20'
-                        } ${isToday ? 'bg-primary/5 ring-1 ring-inset ring-primary/20' : ''}`}
-                    >
-                      {day && (
-                        <>
-                          <div className={`text-xs font-medium mb-2 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
-                            {day}
-                          </div>
-                          <div className="space-y-1.5">
-                            {dayEvents.map(event => {
-                              const icon = filterOptions.find(opt => opt.value === event.event_type)?.icon || '📅';
-                              return (
-                                <button
-                                  key={event.id}
-                                  onClick={() => setSelectedEvent(event)}
-                                  className="w-full text-left text-xs p-1.5 rounded-md bg-secondary/50 hover:bg-secondary border border-transparent hover:border-border transition-all group"
-                                >
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="shrink-0">{icon}</span>
-                                    <span className="truncate font-medium group-hover:text-primary transition-colors">{event.title}</span>
-                                  </div>
-                                  <div className="text-[10px] text-muted-foreground pl-5 mt-0.5">
-                                    {event.time && new Date(`2000-01-01T${event.time}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  );
-                })
-              ))}
-            </div>
-          </div>
-        </div>
       ) : filteredEvents.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
+        /* Events Grid - supports list/grid view */
+        <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6" : "flex flex-col gap-4"}>
           {filteredEvents.map((event, index) => (
             <div key={event.id} className="relative">
               {/* AI Match Badge */}
@@ -503,7 +528,8 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
                 rsvpStatus={rsvpStatus[event.id]}
                 attendeeCount={eventAttendees[event.id]?.length || 0}
                 recentAttendees={eventAttendees[event.id]?.slice(0, 3) || []}
-                mutualConnections={0} // TODO: Calculate mutual connections
+                mutualConnections={0}
+                viewMode={viewMode}
               />
 
               {/* AI Match Reason */}
@@ -548,7 +574,8 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
             </button>
           )}
         </motion.div>
-      )}
+      )
+      }
 
       {/* Milwaukee Highlight Section */}
       <motion.div
@@ -583,30 +610,173 @@ export function EventsPage({ user, walletAddress, isAdmin }) {
       </motion.div>
 
       {/* Event Detail Drawer */}
-      {selectedEvent && (
-        <EventDetailDrawer
-          event={selectedEvent}
-          onClose={() => setSelectedEvent(null)}
-          onViewProfile={(walletHash) => {
-            // Navigate to profile view
-            const url = new URL(window.location);
-            url.searchParams.set('viewProfile', walletHash);
-            window.history.pushState({}, '', url);
-            window.dispatchEvent(new PopStateEvent('popstate'));
-          }}
-          onRsvp={(status) => handleRsvp(selectedEvent.id, status)}
-          rsvpStatus={rsvpStatus[selectedEvent.id]}
-          walletAddress={walletAddress}
-        />
-      )}
+      {
+        selectedEvent && (
+          <EventDetailDrawer
+            event={selectedEvent}
+            onClose={() => setSelectedEvent(null)}
+            onViewProfile={(walletHash) => {
+              // Navigate to profile view
+              const url = new URL(window.location);
+              url.searchParams.set('viewProfile', walletHash);
+              window.history.pushState({}, '', url);
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            onRsvp={(status) => handleRsvp(selectedEvent.id, status)}
+            rsvpStatus={rsvpStatus[selectedEvent.id]}
+            walletAddress={walletAddress}
+          />
+        )
+      }
 
       {/* Event Request Form */}
-      {showRequestForm && (
-        <EventRequestForm
-          onClose={() => setShowRequestForm(false)}
-          userEmail={user?.email}
-        />
+      {
+        showRequestForm && (
+          <EventRequestForm
+            onClose={() => setShowRequestForm(false)}
+            userEmail={user?.email}
+          />
+        )
+      }
+
+      <SearchModal
+        isOpen={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        handleSearch={handleAiSearch}
+        isSearching={aiSearching}
+        results={aiSearchResults}
+        onSelectEvent={(event) => {
+          setSelectedEvent(event);
+          setShowSearchModal(false);
+        }}
+        onRsvp={handleRsvp}
+        rsvpStatus={rsvpStatus}
+        eventAttendees={eventAttendees}
+      />
+    </div >
+  );
+}
+
+function SearchModal({
+  isOpen, onClose, searchTerm, setSearchTerm, handleSearch, isSearching,
+  results = [], onSelectEvent, onRsvp, rsvpStatus = {}, eventAttendees = {}
+}) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-start justify-center pt-24 sm:pt-32 px-4"
+        >
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+            className="relative w-full max-w-2xl bg-background rounded-2xl shadow-2xl border border-border overflow-hidden z-50 flex flex-col max-h-[80vh]"
+          >
+            <div className="p-6 pb-4 border-b border-border flex-shrink-0">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-2xl">🔍</span>
+                <h2 className="text-xl font-semibold">Find Events</h2>
+                <button
+                  onClick={onClose}
+                  className="ml-auto w-8 h-8 flex items-center justify-center rounded-full hover:bg-foreground/10 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <div className="relative">
+                  <Input
+                    placeholder="Describe what you're looking for..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && searchTerm.trim()) {
+                        handleSearch();
+                      }
+                    }}
+                    className="h-14 text-lg pl-4 shadow-sm"
+                    autoFocus
+                  />
+                </div>
+
+                <button
+                  onClick={() => handleSearch()}
+                  disabled={isSearching || !searchTerm.trim()}
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 text-white font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                >
+                  {isSearching ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Searching...
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2">
+                      <span>✨</span>
+                      <span>AI Search</span>
+                    </div>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 pt-2">
+              {results.length > 0 ? (
+                <div className="space-y-6 mt-4">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>Found {results.length} results</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4">
+                    {results.map((event) => (
+                      <div key={event.id} className="relative">
+                        <EnhancedEventCard
+                          event={event}
+                          onClick={() => onSelectEvent(event)}
+                          onRsvp={(status) => onRsvp(event.id, status)}
+                          rsvpStatus={rsvpStatus[event.id]}
+                          attendeeCount={eventAttendees[event.id]?.length || 0}
+                          recentAttendees={eventAttendees[event.id]?.slice(0, 3) || []}
+                          viewMode="list"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                    Try searching for
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {['Morning coding events', 'React workshops', 'Weekend hackathons', 'Beginner friendly', 'Free food'].map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        onClick={() => {
+                          setSearchTerm(suggestion);
+                          handleSearch(suggestion);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-foreground/5 hover:bg-foreground/10 text-sm text-foreground/80 hover:text-foreground transition-colors border border-transparent hover:border-foreground/20"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
       )}
-    </div>
+    </AnimatePresence>
   );
 }

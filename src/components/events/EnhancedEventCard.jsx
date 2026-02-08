@@ -188,15 +188,33 @@ export function EnhancedEventCard({
                 {/* Avatar Stack */}
                 {recentAttendees.length > 0 && (
                   <div className="flex -space-x-2">
-                    {recentAttendees.slice(0, 3).map((attendee, index) => (
-                      <div
-                        key={index}
-                        className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/60 border-2 border-background flex items-center justify-center text-xs font-bold"
-                        title={attendee.display_name || attendee.email}
-                      >
-                        {(attendee.display_name || attendee.email || '?')[0].toUpperCase()}
-                      </div>
-                    ))}
+                    {recentAttendees.slice(0, 3).map((attendee, index) => {
+                      const displayName = attendee.name || attendee.display_name || attendee.email || '?';
+                      return attendee.avatar_url ? (
+                        <img
+                          key={index}
+                          src={attendee.avatar_url}
+                          alt={displayName}
+                          title={displayName}
+                          className="w-8 h-8 rounded-full object-cover border-2 border-background"
+                          onError={(e) => {
+                            // Replace broken img with initial div
+                            const div = document.createElement('div');
+                            div.className = 'w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/60 border-2 border-background flex items-center justify-center text-xs font-bold';
+                            div.textContent = displayName[0].toUpperCase();
+                            e.target.replaceWith(div);
+                          }}
+                        />
+                      ) : (
+                        <div
+                          key={index}
+                          className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/60 border-2 border-background flex items-center justify-center text-xs font-bold"
+                          title={displayName}
+                        >
+                          {displayName[0].toUpperCase()}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 

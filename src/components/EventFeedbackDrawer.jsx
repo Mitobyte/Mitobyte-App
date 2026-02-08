@@ -279,25 +279,38 @@ export function EventFeedbackDrawer({ isOpen, onClose, eventId }) {
                   )}
 
                   {question.type === 'rating' && (
-                    <div className="flex gap-2 justify-center">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleInputChange(question.id, rating.toString());
-                          }}
-                          className={`p-3 rounded-lg transition-all touch-manipulation active:scale-95 ${
-                            formResponses[question.id] && parseInt(formResponses[question.id]) >= rating
-                              ? 'text-yellow-500 bg-yellow-500/10'
-                              : 'text-gray-300 hover:text-yellow-400 active:text-yellow-400'
-                          }`}
-                          title={`${rating} star${rating !== 1 ? 's' : ''}`}
-                        >
-                          <span className="text-3xl leading-none block">⭐</span>
-                        </button>
-                      ))}
+                    <div className="flex gap-1 justify-center py-2">
+                      {[1, 2, 3, 4, 5].map((rating) => {
+                        const isSelected = formResponses[question.id] && parseInt(formResponses[question.id]) >= rating;
+                        return (
+                          <button
+                            key={rating}
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleInputChange(question.id, rating.toString());
+                            }}
+                            className={`p-3 sm:p-4 rounded-xl transition-all touch-manipulation hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 ${isSelected
+                                ? 'text-yellow-400 scale-105'
+                                : 'text-muted-foreground/30 hover:text-yellow-400/70'
+                              }`}
+                            title={`${rating} star${rating !== 1 ? 's' : ''}`}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill={isSelected ? "currentColor" : "none"}
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="w-10 h-10 sm:w-12 sm:h-12 drop-shadow-sm"
+                            >
+                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                            </svg>
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

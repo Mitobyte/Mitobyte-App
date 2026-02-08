@@ -143,6 +143,26 @@ export default function EventManagement({ user }) {
     setShowEventModal(true)
   }
 
+  const handleToggleFeatured = async (event) => {
+    try {
+      const response = await fetch(`/api/events/${event.id}/feature`, {
+        method: 'POST'
+      })
+      const data = await response.json()
+      if (data.success) {
+        // Update local state
+        setEvents(prev => prev.map(e =>
+          e.id === event.id ? { ...e, is_featured: data.is_featured ? 1 : 0 } : e
+        ))
+      } else {
+        alert('Failed to toggle featured status')
+      }
+    } catch (err) {
+      console.error('Failed to toggle featured:', err)
+      alert('Failed to toggle featured status')
+    }
+  }
+
   const formatDate = (dateStr) => {
     if (!dateStr) return 'N/A'
     try {
@@ -381,6 +401,11 @@ export default function EventManagement({ user }) {
                               ✓ Feedback
                             </Badge>
                           )}
+                          {event.is_featured ? (
+                            <Badge className="bg-yellow-500 text-white">
+                              ⭐ Featured
+                            </Badge>
+                          ) : null}
                           {event.external_url && (
                             <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">
                               🔗 External
@@ -414,6 +439,15 @@ export default function EventManagement({ user }) {
 
                   {/* Actions */}
                   <div className="flex sm:flex-col gap-2 flex-shrink-0">
+                    <Button
+                      variant={event.is_featured ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleToggleFeatured(event)}
+                      className={`flex-1 sm:flex-none ${event.is_featured ? 'bg-yellow-500 hover:bg-yellow-600' : ''}`}
+                      title={event.is_featured ? 'Remove from Featured' : 'Set as Featured'}
+                    >
+                      {event.is_featured ? '⭐' : '☆'}
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -762,11 +796,10 @@ function EventModal({ event, user, onClose, onSuccess }) {
                   key={type.value}
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, eventType: type.value }))}
-                  className={`p-3 rounded-lg border-2 transition-all min-w-0 ${
-                    formData.eventType === type.value
+                  className={`p-3 rounded-lg border-2 transition-all min-w-0 ${formData.eventType === type.value
                       ? 'border-primary bg-primary/10'
                       : 'border-border hover:border-primary/50'
-                  }`}
+                    }`}
                 >
                   <div className="text-2xl mb-1">{type.icon}</div>
                   <div className="text-xs font-medium break-words">{type.label}</div>
@@ -904,7 +937,7 @@ function EventModal({ event, user, onClose, onSuccess }) {
                 id="checkInFormId"
                 name="checkInFormId"
                 value={formData.checkInFormId || ''}
-                onChange={(e) => setFormData(prev => ({...prev, checkInFormId: e.target.value || null}))}
+                onChange={(e) => setFormData(prev => ({ ...prev, checkInFormId: e.target.value || null }))}
                 className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 disabled={loadingForms}
               >
@@ -929,7 +962,7 @@ function EventModal({ event, user, onClose, onSuccess }) {
                 id="feedbackFormId"
                 name="feedbackFormId"
                 value={formData.feedbackFormId || ''}
-                onChange={(e) => setFormData(prev => ({...prev, feedbackFormId: e.target.value || null}))}
+                onChange={(e) => setFormData(prev => ({ ...prev, feedbackFormId: e.target.value || null }))}
                 className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 disabled={loadingForms}
               >

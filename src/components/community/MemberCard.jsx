@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Badge } from '../ui/badge';
 
@@ -44,6 +45,7 @@ function navigateToProfile(walletHash) {
 }
 
 export function MemberCard({ member, viewMode = 'grid', aiSearchMode = false }) {
+    const [imageError, setImageError] = useState(false);
     const hasContactInfo = member.website || member.github_username || member.twitter_username || member.linkedin_url || member.discord_username;
     const gradient = getAvatarGradient(member.display_name || member.email);
     const initials = getInitials(member.display_name || member.email?.split('@')[0]);
@@ -66,27 +68,16 @@ export function MemberCard({ member, viewMode = 'grid', aiSearchMode = false }) 
             >
                 {/* Avatar - Clean square with gradient fallback */}
                 <div className="aspect-square w-full overflow-hidden relative">
-                    {member.avatar_url ? (
-                        <>
-                            <img
-                                src={member.avatar_url}
-                                alt={member.display_name || 'Member'}
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.nextSibling.style.display = 'flex';
-                                }}
-                            />
-                            <div
-                                className={`w-full h-full items-center justify-center bg-gradient-to-br ${gradient}`}
-                                style={{ display: 'none' }}
-                            >
-                                <span className="font-bold text-white text-5xl md:text-6xl tracking-tight select-none"
-                                    style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                                    {initials}
-                                </span>
-                            </div>
-                        </>
+                    {member.avatar_url && !imageError ? (
+                        <img
+                            src={member.avatar_url}
+                            alt={member.display_name || 'Member'}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            style={{ imageRendering: '-webkit-optimize-contrast' }}
+                            loading="lazy"
+                            decoding="async"
+                            onError={() => setImageError(true)}
+                        />
                     ) : (
                         <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${gradient}`}>
                             <span className="font-bold text-white text-5xl md:text-6xl tracking-tight select-none"
@@ -197,24 +188,16 @@ export function MemberCard({ member, viewMode = 'grid', aiSearchMode = false }) 
         >
             {/* Avatar */}
             <div className={`w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gradient-to-br ${gradient}`}>
-                {member.avatar_url ? (
-                    <>
-                        <img
-                            src={member.avatar_url}
-                            alt={member.display_name || 'Member'}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'flex';
-                            }}
-                        />
-                        <div
-                            className="w-full h-full items-center justify-center"
-                            style={{ display: 'none' }}
-                        >
-                            <span className="font-bold text-white text-xl">{initials}</span>
-                        </div>
-                    </>
+                {member.avatar_url && !imageError ? (
+                    <img
+                        src={member.avatar_url}
+                        alt={member.display_name || 'Member'}
+                        className="w-full h-full object-cover"
+                        style={{ imageRendering: '-webkit-optimize-contrast' }}
+                        loading="lazy"
+                        decoding="async"
+                        onError={() => setImageError(true)}
+                    />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center">
                         <span className="font-bold text-white text-xl tracking-tight">{initials}</span>

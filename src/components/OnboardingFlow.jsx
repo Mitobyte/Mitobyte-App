@@ -113,40 +113,20 @@ export function OnboardingFlow({ user, walletAddress, onComplete }) {
     {
       id: 'welcome',
       title: 'Welcome to Mitobyte!',
-      description: 'Let\'s set up your profile so the community can get to know you',
+      description: 'Let\'s get you set up quickly',
       icon: '👋'
     },
     {
-      id: 'resume',
-      title: 'Tell Us About Yourself',
-      description: 'Let AI create your profile from your description (optional)',
-      icon: '✨'
-    },
-    {
       id: 'basic',
-      title: 'Tell us about yourself',
-      description: 'Basic information to help others connect with you',
+      title: 'Create Your Profile',
+      description: 'Just your name and username to get started',
       icon: '👤',
-      fields: ['name', 'username', 'tagline', 'bio', 'location']
-    },
-    {
-      id: 'skills',
-      title: 'Your Skills & Interests',
-      description: 'What are you passionate about? What do you bring to the community?',
-      icon: '💡',
-      fields: ['skills', 'interests']
-    },
-    {
-      id: 'social',
-      title: 'Connect Your Socials',
-      description: 'Link your social profiles (optional but recommended)',
-      icon: '🔗',
-      fields: ['github_username', 'twitter_username', 'linkedin_url', 'discord_username', 'website']
+      fields: ['name', 'username']
     },
     {
       id: 'complete',
       title: 'You\'re All Set!',
-      description: 'Your profile is complete. Welcome to the Milwaukee tech community!',
+      description: 'Welcome to the Milwaukee tech community!',
       icon: '🎉'
     }
   ];
@@ -235,12 +215,10 @@ export function OnboardingFlow({ user, walletAddress, onComplete }) {
       return inviteCode.trim().length >= 8;
     }
     if (currentStepData.id === 'basic') {
-      return formData.name.trim() && formData.username.trim() && formData.tagline.trim() && formData.bio.trim() && formData.location.trim();
+      // Only require name and username for simplified onboarding
+      return formData.name.trim() && formData.username.trim();
     }
-    if (currentStepData.id === 'skills') {
-      return formData.skills.length > 0 && formData.interests.length > 0;
-    }
-    return true; // Welcome, social, and complete steps don't require validation
+    return true; // Welcome and complete steps don't require validation
   };
 
   const handleNext = async () => {
@@ -473,32 +451,23 @@ export function OnboardingFlow({ user, walletAddress, onComplete }) {
                   </div>
                 )}
 
-                {currentStepData.id === 'resume' && (
-                  <div className="py-4">
-                    <AIProfileBuilder
-                      onExtracted={handleResumeExtracted}
-                      onSkip={handleSkipResume}
-                    />
-                  </div>
-                )}
+
 
                 {currentStepData.id === 'basic' && (
-                  <div className="space-y-3 sm:space-y-4">
+                  <div className="space-y-4 sm:space-y-5">
                     <div>
                       <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
-                        Name <span className="text-destructive">*</span>
+                        Full Name <span className="text-destructive">*</span>
                       </label>
                       <input
                         type="text"
                         value={formData.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
                         placeholder="e.g., John Doe"
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                         maxLength={50}
+                        autoFocus
                       />
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Your full name or display name
-                      </div>
                     </div>
 
                     <div>
@@ -510,7 +479,7 @@ export function OnboardingFlow({ user, walletAddress, onComplete }) {
                         value={formData.username}
                         onChange={(e) => handleInputChange('username', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                         placeholder="e.g., johndoe123"
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                         maxLength={30}
                       />
                       <div className="text-xs text-muted-foreground mt-1">
@@ -518,213 +487,23 @@ export function OnboardingFlow({ user, walletAddress, onComplete }) {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
-                        Tagline <span className="text-destructive">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.tagline}
-                        onChange={(e) => handleInputChange('tagline', e.target.value)}
-                        placeholder="e.g., Full-stack developer"
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                        maxLength={100}
-                      />
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {formData.tagline.length}/100 characters
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
-                        Bio <span className="text-destructive">*</span>
-                      </label>
-                      <textarea
-                        value={formData.bio}
-                        onChange={(e) => handleInputChange('bio', e.target.value)}
-                        placeholder="Tell us about yourself..."
-                        rows={3}
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                        maxLength={500}
-                      />
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {formData.bio.length}/500 characters
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
-                        Location <span className="text-destructive">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.location}
-                        onChange={(e) => handleInputChange('location', e.target.value)}
-                        placeholder="e.g., Milwaukee, WI"
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
+                    <div className="pt-2 text-center">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        You can complete your full profile later in settings
+                      </p>
                     </div>
                   </div>
                 )}
 
-                {currentStepData.id === 'skills' && (
-                  <div className="space-y-4 sm:space-y-6">
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
-                        Skills <span className="text-destructive">*</span>
-                        <span className="text-muted-foreground font-normal ml-1 sm:ml-2 text-xs sm:text-sm">(Add at least one)</span>
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={skillInput}
-                          onChange={(e) => setSkillInput(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
-                          placeholder="e.g., React, Python"
-                          className="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                        <button
-                          onClick={addSkill}
-                          className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
-                        >
-                          Add
-                        </button>
-                      </div>
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {formData.skills.map((skill) => (
-                          <span
-                            key={skill}
-                            className="px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm flex items-center gap-2"
-                          >
-                            {skill}
-                            <button
-                              onClick={() => removeSkill(skill)}
-                              className="hover:text-destructive transition-colors"
-                            >
-                              ×
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
 
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
-                        Interests <span className="text-destructive">*</span>
-                        <span className="text-muted-foreground font-normal ml-1 sm:ml-2 text-xs sm:text-sm">(Add at least one)</span>
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={interestInput}
-                          onChange={(e) => setInterestInput(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addInterest())}
-                          placeholder="e.g., AI/ML, Blockchain"
-                          className="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                        <button
-                          onClick={addInterest}
-                          className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
-                        >
-                          Add
-                        </button>
-                      </div>
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {formData.interests.map((interest) => (
-                          <span
-                            key={interest}
-                            className="px-3 py-1.5 bg-secondary/10 text-secondary-foreground rounded-full text-sm flex items-center gap-2"
-                          >
-                            {interest}
-                            <button
-                              onClick={() => removeInterest(interest)}
-                              className="hover:text-destructive transition-colors"
-                            >
-                              ×
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {currentStepData.id === 'social' && (
-                  <div className="space-y-3 sm:space-y-4">
-                    <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
-                      Connect your social profiles (optional)
-                    </p>
-
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Website</label>
-                      <input
-                        type="url"
-                        value={formData.website}
-                        onChange={(e) => handleInputChange('website', e.target.value)}
-                        placeholder="https://yourwebsite.com"
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">GitHub Username</label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">github.com/</span>
-                        <input
-                          type="text"
-                          value={formData.github_username}
-                          onChange={(e) => handleInputChange('github_username', e.target.value)}
-                          placeholder="username"
-                          className="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Twitter/X Username</label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm sm:text-base text-muted-foreground">@</span>
-                        <input
-                          type="text"
-                          value={formData.twitter_username}
-                          onChange={(e) => handleInputChange('twitter_username', e.target.value)}
-                          placeholder="username"
-                          className="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">LinkedIn URL</label>
-                      <input
-                        type="url"
-                        value={formData.linkedin_url}
-                        onChange={(e) => handleInputChange('linkedin_url', e.target.value)}
-                        placeholder="https://linkedin.com/in/username"
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Discord Username</label>
-                      <input
-                        type="text"
-                        value={formData.discord_username}
-                        onChange={(e) => handleInputChange('discord_username', e.target.value)}
-                        placeholder="username#1234"
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-                  </div>
-                )}
 
                 {currentStepData.id === 'complete' && (
                   <div className="text-center space-y-6 py-8">
                     <div className="text-6xl animate-bounce">🎉</div>
                     <div className="space-y-3">
-                      <p className="text-lg font-medium">Your profile is complete!</p>
+                      <p className="text-lg font-medium">You're ready to go!</p>
                       <p className="text-muted-foreground">
-                        You're now part of Milwaukee's vibrant tech community. Start exploring events, connecting with developers, and building amazing things together!
+                        Welcome to Milwaukee's vibrant tech community. Start exploring events and connecting with developers!
                       </p>
                     </div>
                     <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mt-8">
@@ -752,39 +531,37 @@ export function OnboardingFlow({ user, walletAddress, onComplete }) {
                 </div>
               )}
 
-              {/* Navigation Buttons - Hide for resume step as it has its own buttons */}
-              {currentStepData.id !== 'resume' && (
-                <div className="flex gap-2 sm:gap-3 mt-6 sm:mt-8">
-                  {currentStep > 0 && currentStep < steps.length - 1 && (
-                    <button
-                      onClick={handleBack}
-                      disabled={loading}
-                      className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base rounded-lg border border-border hover:bg-accent transition-colors disabled:opacity-50"
-                    >
-                      Back
-                    </button>
-                  )}
-
+              {/* Navigation Buttons */}
+              <div className="flex gap-2 sm:gap-3 mt-6 sm:mt-8">
+                {currentStep > 0 && currentStep < steps.length - 1 && (
                   <button
-                    onClick={currentStep === steps.length - 1 ? handleComplete : handleNext}
-                    disabled={(currentStep !== steps.length - 1 && !canProceed) || loading}
-                    className="flex-1 px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleBack}
+                    disabled={loading}
+                    className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base rounded-lg border border-border hover:bg-accent transition-colors disabled:opacity-50"
                   >
-                    {loading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></div>
-                        <span className="hidden sm:inline">{currentStep === steps.length - 1 ? 'Completing...' : 'Saving...'}</span>
-                      </span>
-                    ) : currentStep === steps.length - 1 ? (
-                      'Get Started'
-                    ) : currentStep === 0 ? (
-                      <span><span className="hidden sm:inline">Start Building Your </span>Profile</span>
-                    ) : (
-                      'Continue'
-                    )}
+                    Back
                   </button>
-                </div>
-              )}
+                )}
+
+                <button
+                  onClick={currentStep === steps.length - 1 ? handleComplete : handleNext}
+                  disabled={(currentStep !== steps.length - 1 && !canProceed) || loading}
+                  className="flex-1 px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></div>
+                      <span className="hidden sm:inline">{currentStep === steps.length - 1 ? 'Completing...' : 'Saving...'}</span>
+                    </span>
+                  ) : currentStep === steps.length - 1 ? (
+                    'Get Started'
+                  ) : currentStep === 0 ? (
+                    <span><span className="hidden sm:inline">Start Building Your </span>Profile</span>
+                  ) : (
+                    'Continue'
+                  )}
+                </button>
+              </div>
             </motion.div>
           </AnimatePresence>
         </div>

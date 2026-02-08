@@ -153,33 +153,30 @@ export function EventDetailDrawer({ event, onClose, onRsvp, rsvpStatus, walletAd
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => onRsvp?.('going')}
-                      className={`flex flex-col items-center justify-center p-4 rounded-lg border transition-colors ${
-                        rsvpStatus === 'going'
+                      className={`flex flex-col items-center justify-center p-4 rounded-lg border transition-colors ${rsvpStatus === 'going'
                           ? 'border-primary bg-primary/10'
                           : 'border-border hover:bg-foreground/5'
-                      }`}
+                        }`}
                     >
                       <span className="text-2xl mb-1">✅</span>
                       <span className="text-sm font-medium">Going</span>
                     </button>
                     <button
                       onClick={() => onRsvp?.('maybe')}
-                      className={`flex flex-col items-center justify-center p-4 rounded-lg border transition-colors ${
-                        rsvpStatus === 'maybe'
+                      className={`flex flex-col items-center justify-center p-4 rounded-lg border transition-colors ${rsvpStatus === 'maybe'
                           ? 'border-primary bg-primary/10'
                           : 'border-border hover:bg-foreground/5'
-                      }`}
+                        }`}
                     >
                       <span className="text-2xl mb-1">🤔</span>
                       <span className="text-sm font-medium">Maybe</span>
                     </button>
                     <button
                       onClick={() => onRsvp?.('no')}
-                      className={`flex flex-col items-center justify-center p-4 rounded-lg border transition-colors ${
-                        rsvpStatus === 'no'
+                      className={`flex flex-col items-center justify-center p-4 rounded-lg border transition-colors ${rsvpStatus === 'no'
                           ? 'border-primary bg-primary/10'
                           : 'border-border hover:bg-foreground/5'
-                      }`}
+                        }`}
                     >
                       <span className="text-2xl mb-1">❌</span>
                       <span className="text-sm font-medium">Can't Go</span>
@@ -207,49 +204,52 @@ export function EventDetailDrawer({ event, onClose, onRsvp, rsvpStatus, walletAd
                   </div>
                 ) : attendees.length > 0 ? (
                   <div className="space-y-2">
-                    {attendees.map((attendee, index) => (
-                      <button
-                        key={index}
-                        onClick={() => {
-                          // Navigate to user profile
-                          if (attendee.user_wallet_hash) {
-                            onViewProfile?.(attendee.user_wallet_hash);
-                          }
-                        }}
-                        className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-foreground/5 transition-colors cursor-pointer text-left"
-                      >
-                        {attendee.avatar_url ? (
-                          <img
-                            src={attendee.avatar_url}
-                            alt={attendee.display_name || attendee.email || 'User'}
-                            className="w-10 h-10 rounded-full object-cover border-2 border-border"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextElementSibling.style.display = 'flex';
-                            }}
-                          />
-                        ) : null}
-                        <div
-                          className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-primary/60 flex items-center justify-center text-sm font-bold"
-                          style={{ display: attendee.avatar_url ? 'none' : 'flex' }}
+                    {attendees.map((attendee, index) => {
+                      const displayName = attendee.name || attendee.display_name || attendee.email?.split('@')[0] || 'Member';
+                      const initials = displayName[0]?.toUpperCase() || '?';
+                      return (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            if (attendee.user_wallet_hash) {
+                              onViewProfile?.(attendee.user_wallet_hash);
+                            }
+                          }}
+                          className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-foreground/5 transition-colors cursor-pointer text-left"
                         >
-                          {(attendee.display_name || attendee.email || '?')[0].toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">
-                            {attendee.display_name || attendee.email || 'Member'}
-                          </div>
-                          {attendee.email && attendee.display_name && (
-                            <div className="text-xs text-muted-foreground truncate">
-                              {attendee.email}
+                          {attendee.avatar_url ? (
+                            <img
+                              src={attendee.avatar_url}
+                              alt={displayName}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-border"
+                              onError={(e) => {
+                                const div = document.createElement('div');
+                                div.className = 'w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-primary/60 flex items-center justify-center text-sm font-bold';
+                                div.textContent = initials;
+                                e.target.replaceWith(div);
+                              }}
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-primary/60 flex items-center justify-center text-sm font-bold">
+                              {initials}
                             </div>
                           )}
-                        </div>
-                        {attendee.rsvp_status === 'going' && (
-                          <Badge variant="outline" className="text-xs">✅ Going</Badge>
-                        )}
-                      </button>
-                    ))}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">
+                              {displayName}
+                            </div>
+                            {attendee.name && attendee.display_name && (
+                              <div className="text-xs text-muted-foreground truncate">
+                                @{attendee.display_name}
+                              </div>
+                            )}
+                          </div>
+                          {attendee.rsvp_status === 'going' && (
+                            <Badge variant="outline" className="text-xs">✅ Going</Badge>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground text-center p-6 border border-border rounded-lg">
