@@ -118,9 +118,9 @@ export function OnboardingFlow({ user, walletAddress, onComplete }) {
     },
     {
       id: 'basic',
-      title: 'Create Your Profile',
-      description: 'Just your name and username to get started',
-      icon: '👤',
+      title: 'Quick Setup',
+      description: 'Just two fields and you\'re in!',
+      icon: '✨',
       fields: ['name', 'username']
     },
     {
@@ -554,9 +554,9 @@ export function OnboardingFlow({ user, walletAddress, onComplete }) {
                       <span className="hidden sm:inline">{currentStep === steps.length - 1 ? 'Completing...' : 'Saving...'}</span>
                     </span>
                   ) : currentStep === steps.length - 1 ? (
-                    'Get Started'
+                    'Let\'s Go!'
                   ) : currentStep === 0 ? (
-                    <span><span className="hidden sm:inline">Start Building Your </span>Profile</span>
+                    'Get Started'
                   ) : (
                     'Continue'
                   )}
