@@ -46,8 +46,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     // Fetch all public members
     const { results: members } = await context.env.DB.prepare(`
       SELECT
-        up.user_wallet_hash as wallet_hash,
-        u.display_name,
+        u.wallet_hash,
+        COALESCE(up.name, u.display_name, u.email) as display_name,
         u.email,
         up.bio,
         up.tagline,
@@ -60,9 +60,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         up.twitter_username,
         up.linkedin_url,
         up.discord_username
-      FROM user_profiles up
-      JOIN users u ON up.user_wallet_hash = u.wallet_hash
-      WHERE up.visibility = 'public'
+      FROM users u
+      LEFT JOIN user_profiles up ON u.id = up.user_id
+      WHERE COALESCE(up.profile_visibility, 'public') != 'private'
       ORDER BY u.created_at DESC
     `).all();
 
