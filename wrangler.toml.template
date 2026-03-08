@@ -7,7 +7,7 @@ pages_build_output_dir = "dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "mitobyte-app-users"
-database_id = "b61ccd37-4d85-4cd8-8a88-0765fd2a5931"
+database_id = "{{D1_DATABASE_ID}}"
 
 # Workers AI Binding
 [ai]
@@ -16,7 +16,7 @@ binding = "AI"
 # ActivityPub Federation KV Store
 [[kv_namespaces]]
 binding = "FEDERATION_KV"
-id = "4d82cd02614d42b4a1ac7b5f6e900c0f"
+id = "{{KV_PREVIEW_ID}}"
 
 # ActivityPub Federation Queue
 [[queues.producers]]
@@ -64,7 +64,7 @@ SENDER_NAME = "Mitobyte"
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "mitobyte-users"
-database_id = "b61ccd37-4d85-4cd8-8a88-0765fd2a5931"
+database_id = "{{D1_DATABASE_ID}}"
 
 # Workers AI Binding
 [env.production.ai]
@@ -73,7 +73,7 @@ binding = "AI"
 # ActivityPub Federation KV Store
 [[env.production.kv_namespaces]]
 binding = "FEDERATION_KV"
-id = "6a89ba1e01b0471a9c8a9bc55f1caa4c"
+id = "{{KV_PROD_ID}}"
 
 # ActivityPub Federation Queue
 [[env.production.queues.producers]]

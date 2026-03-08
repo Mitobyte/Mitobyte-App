@@ -28,7 +28,9 @@ dist-ssr
 .dev.vars
 .env
 .env.local
+cloudflare.env
 .mf
+.history
 
 # Private keys (NEVER commit these!)
 .keys/
